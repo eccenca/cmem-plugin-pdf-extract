@@ -2,7 +2,7 @@
 
 import re
 from collections.abc import Sequence
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from io import BytesIO
 from os import cpu_count
 
@@ -64,15 +64,6 @@ MAX_PROCESSES_DEFAULT = cpu_count() - 1  # type: ignore[operator]
         ),
         PluginParameter(
             param_type=IntParameterType(),
-            name="max_threads",
-            label="Maximum number of threads for processing pages",
-            description="""The maximum number of threads to use for processing pages within a single
-            file.""",
-            advanced=True,
-            default_value=4,
-        ),
-        PluginParameter(
-            param_type=IntParameterType(),
             name="max_processes",
             label="Maximum number of processes for processing files",
             description="""The maximum number of processes to use for processing multiple files
@@ -90,13 +81,11 @@ class PdfExtract(WorkflowPlugin):
         regex: str,
         all_files: bool = False,
         strict: bool = True,
-        max_threads: int = 4,
         max_processes: int = MAX_PROCESSES_DEFAULT,
     ) -> None:
         self.regex = regex
         self.all_files = all_files
         self.strict = strict
-        self.max_threads = max_threads
         self.max_processes = max_processes
 
         self.input_ports = FixedNumberOfInputs([])
@@ -104,10 +93,8 @@ class PdfExtract(WorkflowPlugin):
         self.output_port = FixedSchemaPort(self.schema)
 
     @staticmethod
-    def extract_pdf_data_worker(
-        filename: str, project_id: str, strict: bool, max_threads: int
-    ) -> dict:
-        """Extract structured PDF data (with multithreading inside)."""
+    def extract_pdf_data_worker(filename: str, project_id: str, strict: bool) -> dict:
+        """Extract structured PDF data (sequential processing)."""
         output: dict = {"metadata": {"Filename": filename}, "pages": []}
         binary_file = BytesIO(get_resource(project_id, filename))
 
@@ -115,13 +102,14 @@ class PdfExtract(WorkflowPlugin):
             with pdfplumber_open(binary_file) as pdf:
                 output["metadata"].update(pdf.metadata or {})  # type: ignore[attr-defined]
 
-                with ThreadPoolExecutor(max_workers=max_threads) as executor:
-                    futures = {
-                        executor.submit(PdfExtract.process_page, page, i + 1, strict): i
-                        for i, page in enumerate(pdf.pages)
-                    }
-                    for future in as_completed(futures):
-                        output["pages"].append(future.result())
+                for i, page in enumerate(pdf.pages):
+                    try:
+                        page_data = PdfExtract.process_page(page, i + 1, strict)
+                        output["pages"].append(page_data)
+                    except Exception as e:
+                        if strict:
+                            raise
+                        output["pages"].append({"page_number": i + 1, "error": str(e)})
 
         except Exception as e:
             if strict:
@@ -160,7 +148,6 @@ class PdfExtract(WorkflowPlugin):
                     filename,
                     self.context.task.project_id(),
                     self.strict,
-                    self.max_threads,
                 ): filename
                 for filename in filenames
             }
