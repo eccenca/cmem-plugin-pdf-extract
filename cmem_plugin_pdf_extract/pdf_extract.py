@@ -6,7 +6,6 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_compl
 from io import BytesIO
 from os import cpu_count
 
-import pdfplumber
 from cmem.cmempy.workspace.projects.resources import get_resources
 from cmem.cmempy.workspace.projects.resources.resource import get_resource
 from cmem_plugin_base.dataintegration.context import ExecutionContext, ExecutionReport
@@ -20,6 +19,8 @@ from cmem_plugin_base.dataintegration.types import (
     StringParameterType,
 )
 from cmem_plugin_base.dataintegration.utils import setup_cmempy_user_access
+from pdfplumber import open as pdfplumber_open
+from pdfplumber.page import Page
 
 MAX_PROCESSES_DEFAULT = cpu_count() - 1  # type: ignore[operator]
 
@@ -111,7 +112,7 @@ class PdfExtract(WorkflowPlugin):
         binary_file = BytesIO(get_resource(project_id, filename))
 
         try:
-            with pdfplumber.open(binary_file) as pdf:
+            with pdfplumber_open(binary_file) as pdf:
                 output["metadata"].update(pdf.metadata or {})  # type: ignore[attr-defined]
 
                 with ThreadPoolExecutor(max_workers=max_threads) as executor:
@@ -131,7 +132,7 @@ class PdfExtract(WorkflowPlugin):
         return output
 
     @staticmethod
-    def process_page(page: pdfplumber.page.Page, page_number: int) -> dict:
+    def process_page(page: Page, page_number: int) -> dict:
         """Process a single PDF page and return extracted content."""
         try:
             text = page.extract_text() or ""
