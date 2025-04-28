@@ -117,7 +117,7 @@ class PdfExtract(WorkflowPlugin):
 
                 with ThreadPoolExecutor(max_workers=max_threads) as executor:
                     futures = {
-                        executor.submit(PdfExtract.process_page, page, i + 1): i
+                        executor.submit(PdfExtract.process_page, page, i + 1, strict): i
                         for i, page in enumerate(pdf.pages)
                     }
                     for future in as_completed(futures):
@@ -132,12 +132,14 @@ class PdfExtract(WorkflowPlugin):
         return output
 
     @staticmethod
-    def process_page(page: Page, page_number: int) -> dict:
+    def process_page(page: Page, page_number: int, strict: bool) -> dict:
         """Process a single PDF page and return extracted content."""
         try:
             text = page.extract_text() or ""
             tables = page.extract_tables() or []
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
+            if strict:
+                raise
             return {"page_number": page_number, "error": str(e)}
         else:
             return {
