@@ -137,13 +137,14 @@ class PdfExtract(WorkflowPlugin):
         try:
             text = page.extract_text() or ""
             tables = page.extract_tables() or []
+        except Exception as e:  # noqa: BLE001
+            return {"page_number": page_number, "error": str(e)}
+        else:
             return {
                 "page_number": page_number,
                 "text": text,
                 "tables": tables,
             }
-        except Exception as e:
-            return {"page_number": page_number, "error": str(e)}
 
     def get_entities(self, filenames: list) -> Entities:
         """Make entities from extracted PDF data across multiple files."""
