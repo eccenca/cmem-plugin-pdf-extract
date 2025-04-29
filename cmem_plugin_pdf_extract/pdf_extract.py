@@ -43,6 +43,8 @@ TABLE_STRATEGY_PARAMETER_CHOICES = OrderedDict(
     }
 )
 
+TYPE_URI = "urn:x-eccenca:PdfExtract"
+
 
 @Plugin(
     label="Extract text from PDF",
@@ -137,7 +139,7 @@ class PdfExtract(WorkflowPlugin):
         self.max_processes = max_processes
 
         self.input_ports = FixedNumberOfInputs([])
-        self.schema = EntitySchema(type_uri="urn:extract", paths=[EntityPath("output")])
+        self.schema = EntitySchema(type_uri=TYPE_URI, paths=[EntityPath("pdf_extract_output")])
         self.output_port = FixedSchemaPort(self.schema)
 
     @staticmethod
@@ -214,7 +216,7 @@ class PdfExtract(WorkflowPlugin):
                 if self.all_files:
                     all_output.append(result)
                 else:
-                    entities.append(Entity(uri=f"urn:output_{i}", values=[[str(result)]]))
+                    entities.append(Entity(uri=f"{TYPE_URI}_{i}", values=[[str(result)]]))
 
                 self.log.info(f"Processed file {filename} ({i}/{len(filenames)})")
                 operation_desc = "files processed" if i != 1 else "file processed"
@@ -223,7 +225,7 @@ class PdfExtract(WorkflowPlugin):
                 )
 
         if self.all_files:
-            entities = [Entity(uri="urn:output", values=[[str(all_output)]])]
+            entities = [Entity(uri=f"{TYPE_URI}_1", values=[[str(all_output)]])]
 
         self.log.info("Finished processing all files")
 
