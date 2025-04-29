@@ -5,8 +5,6 @@ from collections import OrderedDict
 from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from io import BytesIO
-from json import loads
-from json.decoder import JSONDecodeError
 from os import cpu_count
 
 from cmem.cmempy.workspace.projects.resources import get_resources
@@ -26,6 +24,7 @@ from cmem_plugin_base.dataintegration.types import (
 from cmem_plugin_base.dataintegration.utils import setup_cmempy_user_access
 from pdfplumber import open as pdfplumber_open
 from pdfplumber.page import Page
+from yaml import YAMLError, safe_load
 
 from cmem_plugin_pdf_extract.table_extraction_strategies import (
     CUSTOM_TABLE_STRATEGY_DEFAULT,
@@ -87,9 +86,7 @@ TABLE_STRATEGY_PARAMETER_CHOICES = OrderedDict(
             param_type=MultilineStringParameterType(),
             name="custom_table_strategy",
             label="Custom table extraction strategy",
-            description="""Custom table extraction strategy in JSON format, overriding the "Table
-            extraction strategy" parameter setting.""",
-            default_value=CUSTOM_TABLE_STRATEGY_DEFAULT,
+            description="Custom table extraction strategy in YAML format.",
             advanced=True,
         ),
         PluginParameter(
@@ -127,19 +124,19 @@ class PdfExtract(WorkflowPlugin):
         if table_strategy not in TABLE_STRATEGY_PARAMETER_CHOICES:
             raise ValueError(f"Invalid table strategy: {table_strategy}")
         if table_strategy == TABLE_CUSTOM:
-            custom_table_strategy_string = "\n".join(
+            cleaned_string = "\n".join(
                 [
                     line
                     for line in custom_table_strategy.splitlines()
                     if not line.strip().startswith("#") and line.strip() != ""
                 ]
             ).strip()
+            if not cleaned_string:
+                raise ValueError("No custom table strategy defined")
             try:
-                self.table_strategy = loads(custom_table_strategy_string)
-            except JSONDecodeError as e:
-                raise JSONDecodeError(
-                    f"Invalid custom table strategy: ({e.msg})", e.doc, e.pos
-                ) from e
+                self.table_strategy = safe_load(cleaned_string)
+            except YAMLError as e:
+                raise YAMLError(f"Invalid custom table strategy: {e}") from e
         else:
             self.table_strategy = TABLE_EXTRACTION_STRATEGIES[table_strategy]
 
