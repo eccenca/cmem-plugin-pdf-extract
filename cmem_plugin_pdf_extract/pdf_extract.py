@@ -1,9 +1,12 @@
 """Extract text from PDF files"""
 
 import re
+from collections import OrderedDict
 from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from io import BytesIO
+from json import loads
+from json.decoder import JSONDecodeError
 from os import cpu_count
 
 from cmem.cmempy.workspace.projects.resources import get_resources
@@ -11,6 +14,8 @@ from cmem.cmempy.workspace.projects.resources.resource import get_resource
 from cmem_plugin_base.dataintegration.context import ExecutionContext, ExecutionReport
 from cmem_plugin_base.dataintegration.description import Icon, Plugin, PluginParameter
 from cmem_plugin_base.dataintegration.entity import Entities, Entity, EntityPath, EntitySchema
+from cmem_plugin_base.dataintegration.parameter.choice import ChoiceParameterType
+from cmem_plugin_base.dataintegration.parameter.multiline import MultilineStringParameterType
 from cmem_plugin_base.dataintegration.plugins import WorkflowPlugin
 from cmem_plugin_base.dataintegration.ports import FixedNumberOfInputs, FixedSchemaPort
 from cmem_plugin_base.dataintegration.types import (
@@ -22,7 +27,22 @@ from cmem_plugin_base.dataintegration.utils import setup_cmempy_user_access
 from pdfplumber import open as pdfplumber_open
 from pdfplumber.page import Page
 
+from cmem_plugin_pdf_extract.table_extraction_strategies import (
+    CUSTOM_TABLE_STRATEGY_DEFAULT,
+    TABLE_EXTRACTION_STRATEGIES,
+)
+
 MAX_PROCESSES_DEFAULT = cpu_count() - 1  # type: ignore[operator]
+TABLE_LINES = "lines"
+TABLE_TEXT = "text"
+TABLE_CUSTOM = "custom"
+TABLE_STRATEGY_PARAMETER_CHOICES = OrderedDict(
+    {
+        TABLE_LINES: "Lines",
+        TABLE_TEXT: "Text",
+        TABLE_CUSTOM: "Custom",
+    }
+)
 
 
 @Plugin(
@@ -54,6 +74,25 @@ MAX_PROCESSES_DEFAULT = cpu_count() - 1  # type: ignore[operator]
             default_value=True,
         ),
         PluginParameter(
+            param_type=ChoiceParameterType(TABLE_STRATEGY_PARAMETER_CHOICES),
+            name="table_strategy",
+            label="Table extraction strategy",
+            description="""Specifies the method used to detect tables in the PDF page. Options
+            include "lines" and "text", each using different cues (such as  lines or text alignment)
+            to find tables. If "Custom" is selected, a custom setting needs to defined under
+            advanced settings.""",
+            default_value=TABLE_LINES,
+        ),
+        PluginParameter(
+            param_type=MultilineStringParameterType(),
+            name="custom_table_strategy",
+            label="Custom table extraction strategy",
+            description="""Custom table extraction strategy in JSON format, overriding the "Table
+            extraction strategy" parameter setting.""",
+            default_value=CUSTOM_TABLE_STRATEGY_DEFAULT,
+            advanced=True,
+        ),
+        PluginParameter(
             param_type=IntParameterType(),
             name="max_retries",
             label="Maximum number of retries",
@@ -81,8 +120,29 @@ class PdfExtract(WorkflowPlugin):
         regex: str,
         all_files: bool = False,
         strict: bool = True,
+        table_strategy: str = TABLE_LINES,
+        custom_table_strategy: str = CUSTOM_TABLE_STRATEGY_DEFAULT,
         max_processes: int = MAX_PROCESSES_DEFAULT,
     ) -> None:
+        if table_strategy not in TABLE_STRATEGY_PARAMETER_CHOICES:
+            raise ValueError(f"Invalid table strategy: {table_strategy}")
+        if table_strategy == TABLE_CUSTOM:
+            custom_table_strategy_string = "\n".join(
+                [
+                    line
+                    for line in custom_table_strategy.splitlines()
+                    if not line.strip().startswith("#") and line.strip() != ""
+                ]
+            ).strip()
+            try:
+                self.table_strategy = loads(custom_table_strategy_string)
+            except JSONDecodeError as e:
+                raise JSONDecodeError(
+                    f"Invalid custom table strategy: ({e.msg})", e.doc, e.pos
+                ) from e
+        else:
+            self.table_strategy = TABLE_EXTRACTION_STRATEGIES[table_strategy]
+
         self.regex = regex
         self.all_files = all_files
         self.strict = strict
@@ -93,7 +153,9 @@ class PdfExtract(WorkflowPlugin):
         self.output_port = FixedSchemaPort(self.schema)
 
     @staticmethod
-    def extract_pdf_data_worker(filename: str, project_id: str, strict: bool) -> dict:
+    def extract_pdf_data_worker(
+        filename: str, project_id: str, table_settings: dict, strict: bool
+    ) -> dict:
         """Extract structured PDF data (sequential processing)."""
         output: dict = {"metadata": {"Filename": filename}, "pages": []}
         binary_file = BytesIO(get_resource(project_id, filename))
@@ -104,7 +166,7 @@ class PdfExtract(WorkflowPlugin):
 
                 for i, page in enumerate(pdf.pages):
                     try:
-                        page_data = PdfExtract.process_page(page, i + 1, strict)
+                        page_data = PdfExtract.process_page(page, i + 1, table_settings, strict)
                         output["pages"].append(page_data)
                     except Exception as e:
                         if strict:
@@ -115,16 +177,15 @@ class PdfExtract(WorkflowPlugin):
             if strict:
                 raise
             output["metadata"]["error"] = str(e)
-            output["pages"] = []
 
         return output
 
     @staticmethod
-    def process_page(page: Page, page_number: int, strict: bool) -> dict:
+    def process_page(page: Page, page_number: int, table_settings: dict, strict: bool) -> dict:
         """Process a single PDF page and return extracted content."""
         try:
             text = page.extract_text() or ""
-            tables = page.extract_tables() or []
+            tables = page.extract_tables(table_settings) or []
         except Exception as e:
             if strict:
                 raise
@@ -147,6 +208,7 @@ class PdfExtract(WorkflowPlugin):
                     PdfExtract.extract_pdf_data_worker,
                     filename,
                     self.context.task.project_id(),
+                    self.table_strategy,
                     self.strict,
                 ): filename
                 for filename in filenames
