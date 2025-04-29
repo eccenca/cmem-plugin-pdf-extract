@@ -79,7 +79,7 @@ TABLE_STRATEGY_PARAMETER_CHOICES = OrderedDict(
             description="""Specifies the method used to detect tables in the PDF page. Options
             include "lines" and "text", each using different cues (such as  lines or text alignment)
             to find tables. If "Custom" is selected, a custom setting needs to defined under
-            advanced settings.""",
+            advanced options.""",
             default_value=TABLE_LINES,
         ),
         PluginParameter(
@@ -87,15 +87,6 @@ TABLE_STRATEGY_PARAMETER_CHOICES = OrderedDict(
             name="custom_table_strategy",
             label="Custom table extraction strategy",
             description="Custom table extraction strategy in YAML format.",
-            advanced=True,
-        ),
-        PluginParameter(
-            param_type=IntParameterType(),
-            name="max_retries",
-            label="Maximum number of retries",
-            description="""The number of times to retry processing a file or page after a failure
-            before giving up and handling it according to strict mode.""",
-            default_value=3,
             advanced=True,
         ),
         PluginParameter(
