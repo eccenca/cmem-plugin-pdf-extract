@@ -83,7 +83,3 @@ Defines a custom table extraction strategy using YAML syntax. Only used if "cust
 **<a id="max_processes">Maximum number of processes for processing files</a>**
 
 Defines the maximum number of processes to use for concurrent file processing. By default, this is set to (number of virtual cores - 1).
-
----
-
-Would you like help auto-linking these anchors elsewhere in your documentation or UI?
