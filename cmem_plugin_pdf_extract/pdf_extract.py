@@ -94,8 +94,11 @@ def get_stderr() -> Generator:
             param_type=ChoiceParameterType(ERROR_HANDLING_PARAMETER_CHOICES),
             name="error_handling",
             label="Error Handling Mode",
-            description="""The mode in which errors are handled. If set to "Ignore", it will log the
-            error and continue, returning empty or error-marked results for failed items.""",
+            description="""The mode in which errors during the extraction are handled. If set to
+            "Ignore", it will log the error and continue, returning empty or error-marked results
+            for failed items. When "Raise on errors and warnings" is selected, any output to STDERR
+            from the underlying PDF extraction module when extracting text is treated as an error.
+            """,
             default_value=RAISE_ON_ERROR,
         ),
         PluginParameter(
