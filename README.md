@@ -20,7 +20,7 @@ Outputs one entity per file:
   "metadata": {
     "Filename": "sample.pdf",
     "Title": "Sample Report",
-    "Author": "ACME Inc.",
+    "Author": "eccenca GmbH",
     ...
   },
   "pages": [
