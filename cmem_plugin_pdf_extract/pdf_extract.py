@@ -97,8 +97,8 @@ def get_stderr() -> Generator:
             description="""The mode in which errors during the extraction are handled. If set to
             "Ignore", it will log the error and continue, returning empty or error-marked results
             for failed items. When "Raise on errors and warnings" is selected, any output to STDERR
-            from the underlying PDF extraction module when extracting text is treated as an error.
-            """,
+            from the underlying PDF extraction module when extracting text and tables is treated as
+            an error.""",
             default_value=RAISE_ON_ERROR,
         ),
         PluginParameter(
@@ -211,14 +211,29 @@ class PdfExtract(WorkflowPlugin):
         page: Page, page_number: int, table_settings: dict, error_handling: str
     ) -> dict:
         """Process a single PDF page and return extracted content."""
+        text_warning = None
+        table_warning = None
         stderr_warning = None
         try:
             with get_stderr() as stderr:
                 text = page.extract_text() or ""
             stderr_output = stderr.getvalue().strip()
             if not text and stderr_output:
-                stderr_warning = f"Text extraction failed or returned None: {stderr_output}"
-            tables = page.extract_tables(table_settings) or []
+                text_warning = f"Text extraction error: {stderr_output}"
+
+            with get_stderr() as stderr:
+                tables = page.extract_tables(table_settings) or []
+            stderr_output = stderr.getvalue().strip()
+            if not tables and stderr_output:
+                table_warning = f"Table extraction error: {stderr_output}"
+
+            if text_warning or table_warning:
+                stderr_warning = (
+                    f"{text_warning}, {table_warning}"
+                    if text_warning and table_warning
+                    else text_warning or table_warning or ""
+                )
+
         except Exception as e:
             if error_handling != IGNORE:
                 raise

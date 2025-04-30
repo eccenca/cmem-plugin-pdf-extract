@@ -30,7 +30,7 @@ from tests.utils import TestExecutionContext
 
 from . import __path__
 
-PROJECT_ID = f"project_{UUID4}"
+PROJECT_ID = f"project_pdf_extract_plugin_test_{UUID4}"
 TYPE_URI = "urn:x-eccenca:PdfExtract"
 
 
@@ -184,8 +184,8 @@ def test_invalid_pdf_2() -> None:
 
     with pytest.raises(
         ValueError,
-        match=f"File {filename}, page 1: Text extraction failed or returned None: Data-loss while "
-        f"decompressing corrupted data",
+        match=f"File {filename}, page 1: Text extraction error: Data-loss while decompressing "
+        f"corrupted data",
     ):
         PdfExtract(
             regex=filename,

@@ -1,6 +1,7 @@
 """Test results for validation"""
 
 # ruff: noqa: E501
+
 UUID4 = "c394802542bd4c9990cca50d3104e6a0"
 
 FILE_1_RESULT = {
@@ -136,8 +137,7 @@ FILE_CORRUPTED_RESULT_2 = {
             "page_number": 1,
             "text": "",
             "tables": [],
-            "error": "Text extraction failed or returned None: Data-loss while decompressing "
-            "corrupted data",
+            "error": "Text extraction error: Data-loss while decompressing corrupted data",
         }
     ],
 }
