@@ -122,7 +122,7 @@ omnis et exercitationem modi aut voluptas repellendus non sint sint.""",
 
 FILE_CORRUPTED_RESULT_1 = {
     "metadata": {
-        "Filename": "c394802542bd4c9990cca50d3104e6a0_corrupted_1.pdf",
+        "Filename": f"{UUID4}_corrupted_1.pdf",
         "error": "No /Root object! - Is this really a PDF?",
     },
     "pages": [],
@@ -130,10 +130,12 @@ FILE_CORRUPTED_RESULT_1 = {
 
 
 FILE_CORRUPTED_RESULT_2 = {
-    "metadata": {"Filename": "c394802542bd4c9990cca50d3104e6a0_corrupted_2.pdf"},
+    "metadata": {"Filename": f"{UUID4}_corrupted_2.pdf"},
     "pages": [
         {
             "page_number": 1,
+            "text": "",
+            "tables": [],
             "error": "Text extraction failed or returned None: Data-loss while decompressing "
             "corrupted data",
         }

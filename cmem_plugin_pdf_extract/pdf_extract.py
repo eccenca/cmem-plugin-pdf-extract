@@ -45,6 +45,17 @@ TABLE_STRATEGY_PARAMETER_CHOICES = OrderedDict(
     }
 )
 
+IGNORE = "ignore"
+RAISE_ON_ERROR = "raise_on_error"
+RAISE_ON_ERROR_AND_WARNING = "raise_on_error_and_warning"
+ERROR_HANDLING_PARAMETER_CHOICES = OrderedDict(
+    {
+        IGNORE: "Ignore",
+        RAISE_ON_ERROR: "Raise on error",
+        RAISE_ON_ERROR_AND_WARNING: "Raise on error and warning",
+    }
+)
+
 TYPE_URI = "urn:x-eccenca:PdfExtract"
 
 
@@ -80,13 +91,12 @@ def get_stderr() -> Generator:
             default_value=False,
         ),
         PluginParameter(
-            param_type=BoolParameterType(),
-            name="strict",
-            label="Strict mode",
-            description="""If True, the script will raise an error on any failure during file or
-            page processing. If False, it will log the error and continue, returning empty or
-            error-marked results for failed items.""",
-            default_value=True,
+            param_type=ChoiceParameterType(ERROR_HANDLING_PARAMETER_CHOICES),
+            name="error_handling",
+            label="Error Handling Mode",
+            description="""The mode in which errors are handled. If set to "Ignore", it will log the
+            error and continue, returning empty or error-marked results for failed items.""",
+            default_value=RAISE_ON_ERROR,
         ),
         PluginParameter(
             param_type=ChoiceParameterType(TABLE_STRATEGY_PARAMETER_CHOICES),
@@ -123,7 +133,7 @@ class PdfExtract(WorkflowPlugin):
         self,
         regex: str,
         all_files: bool = False,
-        strict: bool = True,
+        error_handling: str = RAISE_ON_ERROR,
         table_strategy: str = TABLE_LINES,
         custom_table_strategy: str = CUSTOM_TABLE_STRATEGY_DEFAULT,
         max_processes: int = MAX_PROCESSES_DEFAULT,
@@ -147,9 +157,12 @@ class PdfExtract(WorkflowPlugin):
         else:
             self.table_strategy = TABLE_EXTRACTION_STRATEGIES[table_strategy]
 
+        if error_handling not in ERROR_HANDLING_PARAMETER_CHOICES:
+            raise ValueError(f"Invalid error handling mode: {error_handling}")
+        self.error_handling = error_handling
+
         self.regex = regex
         self.all_files = all_files
-        self.strict = strict
         self.max_processes = max_processes
 
         self.input_ports = FixedNumberOfInputs([])
@@ -158,54 +171,70 @@ class PdfExtract(WorkflowPlugin):
 
     @staticmethod
     def extract_pdf_data_worker(
-        filename: str, project_id: str, table_settings: dict, strict: bool
+        filename: str, project_id: str, table_settings: dict, error_handling: str
     ) -> dict:
         """Extract structured PDF data (sequential processing)."""
         output: dict = {"metadata": {"Filename": filename}, "pages": []}
         binary_file = BytesIO(get_resource(project_id, filename))
-
+        i = None
         try:
             with pdfplumber_open(binary_file) as pdf:
                 output["metadata"].update(pdf.metadata or {})  # type: ignore[attr-defined]
 
                 for i, page in enumerate(pdf.pages):
                     try:
-                        page_data = PdfExtract.process_page(page, i + 1, table_settings, strict)
+                        page_data = PdfExtract.process_page(
+                            page, i + 1, table_settings, error_handling
+                        )
                         output["pages"].append(page_data)
                     except Exception as e:
-                        if strict:
+                        if error_handling != IGNORE:
                             raise
                         output["pages"].append({"page_number": i + 1, "error": str(e)})
 
         except Exception as e:
-            if strict:
-                raise
+            if error_handling != IGNORE:
+                if isinstance(i, int):
+                    msg = f"File {filename}, page {i + 1}: {e}"
+                else:
+                    msg = f"File {filename}: {e}"
+                raise type(e)(msg) from e
             output["metadata"]["error"] = str(e)
 
         return output
 
     @staticmethod
-    def process_page(page: Page, page_number: int, table_settings: dict, strict: bool) -> dict:
+    def process_page(
+        page: Page, page_number: int, table_settings: dict, error_handling: str
+    ) -> dict:
         """Process a single PDF page and return extracted content."""
+        stderr_warning = None
         try:
             with get_stderr() as stderr:
                 text = page.extract_text() or ""
             stderr_output = stderr.getvalue().strip()
             if not text and stderr_output:
-                raise ValueError(f"Text extraction failed or returned None: {stderr_output}")  # noqa: TRY301
+                stderr_warning = f"Text extraction failed or returned None: {stderr_output}"
             tables = page.extract_tables(table_settings) or []
-            if not isinstance(tables, list):
-                raise TypeError(f"Table extraction failed or returned None: {str(tables).strip()}")  # noqa: TRY301
         except Exception as e:
-            if strict:
+            if error_handling != IGNORE:
                 raise
             return {"page_number": page_number, "error": str(e)}
-        else:
+
+        if stderr_warning:
+            if error_handling == RAISE_ON_ERROR_AND_WARNING:
+                raise ValueError(stderr_warning)
             return {
                 "page_number": page_number,
                 "text": text,
                 "tables": tables,
+                "error": stderr_warning,
             }
+        return {
+            "page_number": page_number,
+            "text": text,
+            "tables": tables,
+        }
 
     def get_entities(self, filenames: list) -> Entities:
         """Make entities from extracted PDF data across multiple files."""
@@ -219,7 +248,7 @@ class PdfExtract(WorkflowPlugin):
                     filename,
                     self.context.task.project_id(),
                     self.table_strategy,
-                    self.strict,
+                    self.error_handling,
                 ): filename
                 for filename in filenames
             }
@@ -229,7 +258,7 @@ class PdfExtract(WorkflowPlugin):
                 try:
                     result = future.result()
                 except Exception as e:
-                    if self.strict:
+                    if self.error_handling != IGNORE:
                         raise
                     result = {"metadata": {"Filename": filename, "error": str(e)}, "pages": []}
 

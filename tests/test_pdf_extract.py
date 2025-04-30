@@ -110,7 +110,7 @@ def setup_corrupted() -> Generator:
 def test_one_entity_per_file() -> None:
     """Test result with table strategy "lines", one entity per file"""
     entities = PdfExtract(
-        regex=f"^{UUID4}_.*\\.pdf$",
+        regex=rf"^{UUID4}_.*\.pdf$",
         table_strategy="lines",
     ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
 
@@ -126,7 +126,7 @@ def test_one_entity_per_file() -> None:
 def test_one_entity() -> None:
     """Test result with table strategy "lines", all results in one entity value"""
     entities = PdfExtract(
-        regex=f"^{UUID4}_.*\\.pdf$",
+        regex=rf"^{UUID4}_.*\.pdf$",
         all_files=True,
         table_strategy="lines",
     ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
@@ -143,7 +143,7 @@ def test_one_entity() -> None:
 def test_table_strategy_text() -> None:
     """Test if table strategy "text" parameter is valid"""
     PdfExtract(
-        regex=f"^{UUID4}_.*\\.pdf$",
+        regex=rf"^{UUID4}_.*\.pdf$",
         all_files=True,
         table_strategy="text",
     ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
@@ -152,17 +152,20 @@ def test_table_strategy_text() -> None:
 @pytest.mark.usefixtures("setup_corrupted")
 def test_invalid_pdf_1() -> None:
     """Test with corrupted pdf"""
+    filename = f"{UUID4}_corrupted_1.pdf"
     entities = PdfExtract(
-        regex=f"{UUID4}_corrupted_1.pdf",
+        regex=filename,
         table_strategy="lines",
-        strict=False,
+        error_handling="ignore",
     ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
 
     assert literal_eval(entities.entities[0].values[0][0]) == FILE_CORRUPTED_RESULT_1
 
-    with pytest.raises(PdfminerException, match="No /Root object! - Is this really a PDF?"):
+    with pytest.raises(
+        PdfminerException, match=f"File {filename}: No /Root object! - Is this really a PDF?"
+    ):
         PdfExtract(
-            regex=f"{UUID4}_corrupted_1.pdf",
+            regex=filename,
             table_strategy="lines",
         ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
 
@@ -170,22 +173,24 @@ def test_invalid_pdf_1() -> None:
 @pytest.mark.usefixtures("setup_corrupted")
 def test_invalid_pdf_2() -> None:
     """Test with corrupted pdf"""
+    filename = f"{UUID4}_corrupted_2.pdf"
     entities = PdfExtract(
-        regex=f"{UUID4}_corrupted_2.pdf",
+        regex=filename,
         table_strategy="lines",
-        strict=False,
+        error_handling="raise_on_error",
     ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
 
     assert literal_eval(entities.entities[0].values[0][0]) == FILE_CORRUPTED_RESULT_2
 
     with pytest.raises(
         ValueError,
-        match="Text extraction failed or returned None: Data-loss while decompressing corrupted "
-        "data",
+        match=f"File {filename}, page 1: Text extraction failed or returned None: Data-loss while "
+        f"decompressing corrupted data",
     ):
         PdfExtract(
-            regex=f"{UUID4}_corrupted_2.pdf",
+            regex=filename,
             table_strategy="lines",
+            error_handling="raise_on_error_and_warning",
         ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
 
 
