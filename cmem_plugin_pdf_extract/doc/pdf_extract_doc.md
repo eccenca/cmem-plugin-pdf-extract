@@ -1,10 +1,4 @@
-# cmem-plugin-pdf-extract
-
 A task to extract text and tables from PDF files.
-
-[![eccenca Corporate Memory][cmem-shield]][cmem-link][![workflow](https://github.com/eccenca/cmem-plugin-pfd-extract/actions/workflows/check.yml/badge.svg)](https://github.com/eccenca/cmem-plugin-pfd-extract/actions) [![pypi version](https://img.shields.io/pypi/v/cmem-plugin-pdf-extract)](https://pypi.org/project/cmem-plugin-pdf-extract) [![license](https://img.shields.io/pypi/l/cmem-plugin-pdf-extract)](https://pypi.org/project/cmem-plugin-pdf-extract)
-[![poetry][poetry-shield]][poetry-link] [![ruff][ruff-shield]][ruff-link] [![mypy][mypy-shield]][mypy-link] [![copier][copier-shield]][copier] 
-
 
 ## Output format
 
@@ -57,6 +51,7 @@ Outputs one entity for all files:
 ```
 
 
+
 ## Parameters
 
 **<a id="regex">File name regex filter</a>**
@@ -92,21 +87,3 @@ Defines the maximum number of processes to use for concurrent file processing. B
 ---
 
 Would you like help auto-linking these anchors elsewhere in your documentation or UI?
-
-
-## Development
-
-- Run [task](https://taskfile.dev/) to see all major development tasks.
-- Use [pre-commit](https://pre-commit.com/) to avoid errors before commit.
-- This repository was created with [this copier template](https://github.com/eccenca/cmem-plugin-template).
-
-[cmem-link]: https://documentation.eccenca.com
-[cmem-shield]: https://img.shields.io/endpoint?url=https://dev.documentation.eccenca.com/badge.json
-[poetry-link]: https://python-poetry.org/
-[poetry-shield]: https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json
-[ruff-link]: https://docs.astral.sh/ruff/
-[ruff-shield]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&label=Code%20Style
-[mypy-link]: https://mypy-lang.org/
-[mypy-shield]: https://www.mypy-lang.org/static/mypy_badge.svg
-[copier]: https://copier.readthedocs.io/
-[copier-shield]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/copier-org/copier/master/img/badge/badge-grayscale-inverted-border-purple.json

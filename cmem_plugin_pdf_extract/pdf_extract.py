@@ -28,6 +28,7 @@ from pdfplumber import open as pdfplumber_open
 from pdfplumber.page import Page
 from yaml import YAMLError, safe_load
 
+from cmem_plugin_pdf_extract.doc import DOC
 from cmem_plugin_pdf_extract.table_extraction_strategies import (
     CUSTOM_TABLE_STRATEGY_DEFAULT,
     TABLE_EXTRACTION_STRATEGIES,
@@ -72,9 +73,9 @@ def get_stderr() -> Generator:
 
 
 @Plugin(
-    label="Extract text from PDF",
-    description="",
-    documentation="",
+    label="Extract from PDF files",
+    description="Extract text and tables from PDF files",
+    documentation=DOC,
     icon=Icon(package=__package__, file_name="ic--baseline-picture-as-pdf.svg"),
     parameters=[
         PluginParameter(
@@ -87,7 +88,8 @@ def get_stderr() -> Generator:
             param_type=BoolParameterType(),
             name="all_files",
             label="Output all file content as one value",
-            description="Output the content of all files as one value.",
+            description="""If enabled, the results of all files will be combined into a single
+            output value. If disabled, each file result will be output in a separate entity.""",
             default_value=False,
         ),
         PluginParameter(
