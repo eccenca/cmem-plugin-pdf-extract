@@ -17,6 +17,7 @@ homepage = "https://github.com/eccenca/cmem-plugin-pfd-extract"
 python = "^3.11"
 pdfplumber = "^0.11.6"
 pyyaml = "^6.0.2"
+types-pyyaml = "^6.0.12.20250402"
 
 [tool.poetry.dependencies.cmem-plugin-base]
 version = "^4.8.0"

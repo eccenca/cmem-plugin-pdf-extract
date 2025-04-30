@@ -1,10 +1,12 @@
 """Extract text from PDF files"""
 
 import re
+import sys
 from collections import OrderedDict
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from io import BytesIO
+from contextlib import contextmanager
+from io import BytesIO, StringIO
 from os import cpu_count
 
 from cmem.cmempy.workspace.projects.resources import get_resources
@@ -44,6 +46,18 @@ TABLE_STRATEGY_PARAMETER_CHOICES = OrderedDict(
 )
 
 TYPE_URI = "urn:x-eccenca:PdfExtract"
+
+
+@contextmanager
+def get_stderr() -> Generator:
+    """Get stderr"""
+    stderr = StringIO()
+    original_stderr = sys.stderr
+    sys.stderr = stderr
+    try:
+        yield stderr
+    finally:
+        sys.stderr = original_stderr
 
 
 @Plugin(
@@ -105,7 +119,7 @@ TYPE_URI = "urn:x-eccenca:PdfExtract"
 class PdfExtract(WorkflowPlugin):
     """PDF Extract plugin."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         regex: str,
         all_files: bool = False,
@@ -174,8 +188,14 @@ class PdfExtract(WorkflowPlugin):
     def process_page(page: Page, page_number: int, table_settings: dict, strict: bool) -> dict:
         """Process a single PDF page and return extracted content."""
         try:
-            text = page.extract_text() or ""
+            with get_stderr() as stderr:
+                text = page.extract_text() or ""
+            stderr_output = stderr.getvalue().strip()
+            if not text and stderr_output:
+                raise ValueError(f"Text extraction failed or returned None: {stderr_output}")  # noqa: TRY301
             tables = page.extract_tables(table_settings) or []
+            if not isinstance(tables, list):
+                raise TypeError(f"Table extraction failed or returned None: {str(tables).strip()}")  # noqa: TRY301
         except Exception as e:
             if strict:
                 raise
@@ -241,4 +261,6 @@ class PdfExtract(WorkflowPlugin):
             for r in get_resources(context.task.project_id())
             if re.match(rf"{self.regex}", r["name"])
         ]
+        if not filenames:
+            raise FileNotFoundError("No matching files found")
         return self.get_entities(filenames)

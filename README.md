@@ -9,7 +9,7 @@ Extract text from PDF files
 
 ### all_files = False:
 
-Outputs entities with the extracted data from each file on the path `output` as string in the format of a JSON object:
+Outputs entities with the extracted data from each file on the path `pdf_extract_output` as string in the format of a JSON object:
 
 ```
 {
