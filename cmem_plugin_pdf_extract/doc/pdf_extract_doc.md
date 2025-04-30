@@ -3,7 +3,7 @@ A task to extract text and tables from PDF files.
 ## Output format
 
 The output is a JSON string on the path `pdf_extract_output`. The format depends on the
-["Output results of all files in one value"](#all_files) parameter
+["Output results of all files in one value"](#all_files) parameter.
 
 ### if False:
 
