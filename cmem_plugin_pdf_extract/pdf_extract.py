@@ -233,7 +233,7 @@ class PdfExtract(WorkflowPlugin):
                 stderr_warning = (
                     f"{text_warning}, {table_warning}"
                     if text_warning and table_warning
-                    else text_warning or table_warning or ""
+                    else text_warning or table_warning
                 )
 
         except Exception as e:
