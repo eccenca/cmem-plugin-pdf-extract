@@ -16,10 +16,17 @@ def validate_page_selection(page_str: str) -> None:
       - At start/end (trimmed)
       - After commas (e.g., "1, 2" is allowed)
     - No spaces within numbers or ranges (e.g., "1 - 5" is invalid)
+    - Range start must be ≤ end (e.g., "5-2" is invalid)
     """
     pattern = r"^\s*\d+(?:\s*-\s*\d+)?(?:\s*,\s*\d+(?:\s*-\s*\d+)?)*\s*$"
     if not re.fullmatch(pattern, page_str):
         raise ValueError("Invalid page selection format")
+
+    for part in [p.strip() for p in page_str.strip().split(",")]:
+        if "-" in part:
+            start, end = map(int, part.split("-"))
+            if start > end:
+                raise ValueError(f"Invalid range in page selection: {part} (start > end)")
 
 
 def parse_page_selection(page_str: str) -> list:
@@ -29,12 +36,8 @@ def parse_page_selection(page_str: str) -> list:
 
     pages: list = []
     for part in [p.strip() for p in page_str.strip().split(",")]:
-        if not part:
-            continue  # Skip empty parts (though validator should prevent this)
         if "-" in part:
             start, end = map(int, part.split("-"))
-            if start > end:
-                raise ValueError(f"Invalid range: {part} (start > end)")
             pages.extend(range(start, end + 1))
         else:
             pages.append(int(part))

@@ -268,3 +268,9 @@ def test_invalid_page_selection_format() -> None:
             regex="test",
             page_selection="invalid",
         )
+
+    with pytest.raises(ValueError, match=r"Invalid range in page selection: 2-1 \(start > end\)"):
+        PdfExtract(
+            regex="test",
+            page_selection="2-1",
+        )
