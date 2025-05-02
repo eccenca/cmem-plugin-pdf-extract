@@ -21,8 +21,10 @@ from tests.results import (
     CUSTOM_TABLE_STRATEGY_SETTING,
     FILE_1_RESULT,
     FILE_2_RESULT,
+    FILE_3_RESULT,
     FILE_CORRUPTED_RESULT_1,
     FILE_CORRUPTED_RESULT_2,
+    FILE_PAGES_NOT_EXIST_RESULT,
     UUID4,
 )
 from tests.utils import TestExecutionContext
@@ -104,6 +106,26 @@ def setup_corrupted() -> Generator:
     delete_project(PROJECT_ID)
 
 
+@pytest.fixture
+def setup_page_selection() -> Generator:
+    """Set up Validate test"""
+    with suppress(Exception):
+        delete_project(PROJECT_ID)
+    make_new_project(PROJECT_ID)
+
+    with (Path(__path__[0]) / "test_3.pdf").open("rb") as f:
+        create_resource(
+            project_name=PROJECT_ID,
+            resource_name=f"{UUID4}_3.pdf",
+            file_resource=f,
+            replace=True,
+        )
+
+    yield
+
+    delete_project(PROJECT_ID)
+
+
 @pytest.mark.usefixtures("setup_valid")
 def test_one_entity_per_file() -> None:
     """Test result with table strategy "lines", one entity per file"""
@@ -145,6 +167,30 @@ def test_table_strategy_text() -> None:
         all_files=True,
         table_strategy="text",
     ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
+
+
+@pytest.mark.usefixtures("setup_page_selection")
+def test_page_selection() -> None:
+    """Test result with page selection"""
+    entities = PdfExtract(
+        regex=f"{UUID4}_3.pdf",
+        table_strategy="lines",
+        page_selection="1,3-5,8-10",
+    ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
+
+    assert literal_eval(entities.entities[0].values[0][0]) == FILE_3_RESULT
+
+
+@pytest.mark.usefixtures("setup_page_selection")
+def test_page_selection_not_exist() -> None:
+    """Test result with page selection where no pages exist"""
+    entities = PdfExtract(
+        regex=f"{UUID4}_3.pdf",
+        table_strategy="lines",
+        page_selection="8",
+    ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
+
+    assert literal_eval(entities.entities[0].values[0][0]) == FILE_PAGES_NOT_EXIST_RESULT
 
 
 @pytest.mark.usefixtures("setup_corrupted")
@@ -212,4 +258,13 @@ def test_custom_table_strategy_parameter() -> None:
             regex="test",
             table_strategy="custom",
             custom_table_strategy=CUSTOM_TABLE_STRATEGY_SETTING + "this:should:fail",
+        )
+
+
+def test_invalid_page_selection_format() -> None:
+    """Test page selection parsing."""
+    with pytest.raises(ValueError, match="Invalid page selection format"):
+        PdfExtract(
+            regex="test",
+            page_selection="invalid",
         )

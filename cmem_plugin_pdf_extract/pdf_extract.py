@@ -1,12 +1,10 @@
 """Extract text from PDF files"""
 
 import re
-import sys
 from collections import OrderedDict
-from collections.abc import Generator, Sequence
+from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from contextlib import contextmanager
-from io import BytesIO, StringIO
+from io import BytesIO
 from os import cpu_count
 
 from cmem.cmempy.workspace.projects.resources import get_resources
@@ -33,6 +31,7 @@ from cmem_plugin_pdf_extract.table_extraction_strategies import (
     CUSTOM_TABLE_STRATEGY_DEFAULT,
     TABLE_EXTRACTION_STRATEGIES,
 )
+from cmem_plugin_pdf_extract.utils import get_stderr, parse_page_selection, validate_page_selection
 
 MAX_PROCESSES_DEFAULT = cpu_count() - 1  # type: ignore[operator]
 TABLE_LINES = "lines"
@@ -60,18 +59,6 @@ ERROR_HANDLING_PARAMETER_CHOICES = OrderedDict(
 TYPE_URI = "urn:x-eccenca:PdfExtract"
 
 
-@contextmanager
-def get_stderr() -> Generator:
-    """Get stderr"""
-    stderr = StringIO()
-    original_stderr = sys.stderr
-    sys.stderr = stderr
-    try:
-        yield stderr
-    finally:
-        sys.stderr = original_stderr
-
-
 @Plugin(
     label="Extract from PDF files",
     description="Extract text and tables from PDF files",
@@ -91,6 +78,16 @@ def get_stderr() -> Generator:
             description="""If enabled, the results of all files will be combined into a single
             output value. If disabled, each file result will be output in a separate entity.""",
             default_value=False,
+        ),
+        PluginParameter(
+            param_type=StringParameterType(),
+            name="page_selection",
+            label="Page selection",
+            description="""Comma-separated page numbers or ranges (e.g., 1,2-5,7) for page
+            selection. Files that do not contain any of the specified pages will return
+            empty results with the information logged. If no page selection is specified, all pages
+            will be processed.""",
+            default_value="",
         ),
         PluginParameter(
             param_type=ChoiceParameterType(ERROR_HANDLING_PARAMETER_CHOICES),
@@ -138,11 +135,16 @@ class PdfExtract(WorkflowPlugin):
         self,
         regex: str,
         all_files: bool = False,
+        page_selection: str = "",
         error_handling: str = RAISE_ON_ERROR,
         table_strategy: str = TABLE_LINES,
         custom_table_strategy: str = CUSTOM_TABLE_STRATEGY_DEFAULT,
         max_processes: int = MAX_PROCESSES_DEFAULT,
     ) -> None:
+        if page_selection:
+            validate_page_selection(page_selection)
+        self.page_selection = page_selection
+
         if table_strategy not in TABLE_STRATEGY_PARAMETER_CHOICES:
             raise ValueError(f"Invalid table strategy: {table_strategy}")
         if table_strategy == TABLE_CUSTOM:
@@ -169,38 +171,51 @@ class PdfExtract(WorkflowPlugin):
         self.regex = regex
         self.all_files = all_files
         self.max_processes = max_processes
-
         self.input_ports = FixedNumberOfInputs([])
         self.schema = EntitySchema(type_uri=TYPE_URI, paths=[EntityPath("pdf_extract_output")])
         self.output_port = FixedSchemaPort(self.schema)
 
     @staticmethod
     def extract_pdf_data_worker(
-        filename: str, project_id: str, table_settings: dict, error_handling: str
-    ) -> dict:
+        filename: str,
+        page_selection: str,
+        project_id: str,
+        table_settings: dict,
+        error_handling: str,
+    ) -> dict | None:
         """Extract structured PDF data (sequential processing)."""
         output: dict = {"metadata": {"Filename": filename}, "pages": []}
         binary_file = BytesIO(get_resource(project_id, filename))
-        i = None
+        page_number = None
         try:
             with pdfplumber_open(binary_file) as pdf:
                 output["metadata"].update(pdf.metadata or {})  # type: ignore[attr-defined]
-
-                for i, page in enumerate(pdf.pages):
+                page_numbers = parse_page_selection(page_selection)
+                valid_page_numbers = (
+                    [_ for _ in page_numbers if _ <= len(pdf.pages)]
+                    if page_numbers
+                    else range(1, len(pdf.pages) + 1)
+                )
+                invalid_page_numbers = list(set(page_numbers) - set(valid_page_numbers))
+                for page_number in valid_page_numbers:
                     try:
                         page_data = PdfExtract.process_page(
-                            page, i + 1, table_settings, error_handling
+                            pdf.pages[page_number - 1], page_number, table_settings, error_handling
                         )
                         output["pages"].append(page_data)
                     except Exception as e:
                         if error_handling != IGNORE:
                             raise
-                        output["pages"].append({"page_number": i + 1, "error": str(e)})
+                        output["pages"].append({"page_number": page_number, "error": str(e)})
+                for page_number in invalid_page_numbers:
+                    output["pages"].append(
+                        {"page_number": page_number, "error": "page does not exist"}
+                    )
 
         except Exception as e:
             if error_handling != IGNORE:
-                if isinstance(i, int):
-                    msg = f"File {filename}, page {i + 1}: {e}"
+                if page_number is not None:
+                    msg = f"File {filename}, page {page_number}: {e}"
                 else:
                     msg = f"File {filename}: {e}"
                 raise type(e)(msg) from e
@@ -266,6 +281,7 @@ class PdfExtract(WorkflowPlugin):
                 executor.submit(
                     PdfExtract.extract_pdf_data_worker,
                     filename,
+                    self.page_selection,
                     self.context.task.project_id(),
                     self.table_strategy,
                     self.error_handling,
