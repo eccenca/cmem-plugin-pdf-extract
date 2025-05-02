@@ -100,7 +100,7 @@ def get_stderr() -> Generator:
             "Ignore", it will log errors and continue, returning empty or error-marked results
             for files. When "Raise on errors and warnings" is selected, any output to STDERR from
             the underlying PDF extraction module when extracting text and tables from pages is
-            treated as an error.""",
+            treated as an error if empty results are returned.""",
             default_value=RAISE_ON_ERROR,
         ),
         PluginParameter(

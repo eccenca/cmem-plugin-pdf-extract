@@ -5,6 +5,7 @@ from ast import literal_eval
 from collections import Counter
 from collections.abc import Generator
 from contextlib import suppress
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
@@ -85,15 +86,14 @@ def setup_corrupted() -> Generator:
         delete_project(PROJECT_ID)
     make_new_project(PROJECT_ID)
 
-    with (Path(__path__[0]) / "test_corrupted_1.pdf").open("rb") as f:
-        create_resource(
-            project_name=PROJECT_ID,
-            resource_name=f"{UUID4}_corrupted_1.pdf",
-            file_resource=f,
-            replace=True,
-        )
+    create_resource(
+        project_name=PROJECT_ID,
+        resource_name=f"{UUID4}_corrupted_1.pdf",
+        file_resource=BytesIO(b""),
+        replace=True,
+    )
 
-    with (Path(__path__[0]) / "test_corrupted_2.pdf").open("rb") as f:
+    with (Path(__path__[0]) / "test_corrupted.pdf").open("rb") as f:
         create_resource(
             project_name=PROJECT_ID,
             resource_name=f"{UUID4}_corrupted_2.pdf",
