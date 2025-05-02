@@ -11,9 +11,7 @@ from typing import Any
 
 import pytest
 from cmem.cmempy.workspace.projects.project import delete_project, make_new_project
-from cmem.cmempy.workspace.projects.resources.resource import (
-    create_resource,
-)
+from cmem.cmempy.workspace.projects.resources.resource import create_resource
 from cmem_plugin_base.dataintegration.entity import EntityPath
 from pdfplumber.utils.exceptions import PdfminerException
 from yaml import YAMLError, safe_load
