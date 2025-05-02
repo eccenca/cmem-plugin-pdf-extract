@@ -288,9 +288,11 @@ class PdfExtract(WorkflowPlugin):
                     entities.append(Entity(uri=f"{TYPE_URI}_{i}", values=[[str(result)]]))
 
                 self.log.info(f"Processed file {filename} ({i}/{len(filenames)})")
-                operation_desc = "files processed" if i != 1 else "file processed"
                 self.context.report.update(
-                    ExecutionReport(entity_count=i, operation_desc=operation_desc)
+                    ExecutionReport(
+                        entity_count=i,
+                        operation_desc=f"{'file' if i == 1 else 'files'} processed",
+                    )
                 )
 
         if self.all_files:
