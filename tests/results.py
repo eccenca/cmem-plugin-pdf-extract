@@ -122,7 +122,7 @@ omnis et exercitationem modi aut voluptas repellendus non sint sint.""",
 
 FILE_3_RESULT = {
     "metadata": {
-        "Filename": "c394802542bd4c9990cca50d3104e6a0_3.pdf",
+        "Filename": f"{UUID4}_3.pdf",
         "Producer": "macOS Version 15.4.1 (Build 24E263) Quartz PDFContext, AppendMode 1.1",
         "Author": "eccenca GmbH",
         "CreationDate": "D:20250429161555Z00'00'",
@@ -224,17 +224,9 @@ inventore.""",
 }
 
 
-FILE_CORRUPTED_RESULT_1 = {
-    "metadata": {
-        "Filename": f"{UUID4}_corrupted_1.pdf",
-        "error": "No /Root object! - Is this really a PDF?",
-    },
-    "pages": [],
-}
-
 FILE_PAGES_NOT_EXIST_RESULT = {
     "metadata": {
-        "Filename": "c394802542bd4c9990cca50d3104e6a0_3.pdf",
+        "Filename": f"{UUID4}_3.pdf",
         "Producer": "macOS Version 15.4.1 (Build 24E263) Quartz PDFContext, AppendMode 1.1",
         "Author": "eccenca GmbH",
         "CreationDate": "D:20250429161555Z00'00'",
@@ -243,6 +235,14 @@ FILE_PAGES_NOT_EXIST_RESULT = {
         "Creator": "Word",
     },
     "pages": [{"page_number": 8, "error": "page does not exist"}],
+}
+
+FILE_CORRUPTED_RESULT_1 = {
+    "metadata": {
+        "Filename": f"{UUID4}_corrupted_1.pdf",
+        "error": "No /Root object! - Is this really a PDF?",
+    },
+    "pages": [],
 }
 
 FILE_CORRUPTED_RESULT_2 = {

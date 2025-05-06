@@ -57,6 +57,11 @@ Outputs one entity for all files:
 
 Regular expression used to filter the resources of the project to be processed. Only matching file names will be included in the extraction.
 
+**<a id="page_selection">Page selection</a>**
+
+Comma-separated page numbers or ranges (e.g., 1,2-5,7) for page selection. Files that do not contain any of the specified pages will return
+empty results with the information logged. If no page selection is specified, all pages will be processed.
+
 **<a id="parameter_doc_all_files">Output all file content as one value</a>**
 
 If enabled, the results of all files will be combined into a single output value. If disabled, each file result will be output in a separate entity.
