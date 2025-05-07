@@ -1,5 +1,7 @@
 """Plugin tests."""
 
+# ruff: noqa: ERA001 F401
+
 import json
 from ast import literal_eval
 from collections import Counter
