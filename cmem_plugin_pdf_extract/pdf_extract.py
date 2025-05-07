@@ -325,7 +325,7 @@ class PdfExtract(WorkflowPlugin):
         filenames = [
             r["name"]
             for r in get_resources(context.task.project_id())
-            if re.match(rf"{self.regex}", r["name"])
+            if re.fullmatch(rf"{self.regex}", r["name"])
         ]
         if not filenames:
             raise FileNotFoundError("No matching files found")
