@@ -1,0 +1,1 @@
+{'metadata': {'Filename': 'c394802542bd4c9990cca50d3104e6a0_corrupted_2.pdf'}, 'pages': [{'page_number': 1, 'text': '', 'tables': [], 'error': 'Text extraction error: Data-loss while decompressing corrupted data'}]}

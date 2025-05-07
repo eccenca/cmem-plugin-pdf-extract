@@ -120,16 +120,20 @@ tasks:
       # --memray is not used on windows
       - platforms: [windows]
         cmd: >
-          poetry run pytest --junitxml={{.JUNIT_FILE}}
-          --cov-report term  --cov-report xml:{{.COVERAGE_FILE}}
-          --cov-report html:{{.COVERAGE_DIR}} --cov={{.PACKAGE}}
-          --html={{.HTML_FILE}} --self-contained-html
-      - platforms: [darwin, linux]
-        cmd: >
-          poetry run pytest --memray --junitxml={{.JUNIT_FILE}}
+          poetry run python -m coverage run --parallel-mode
+          -m pytest --junitxml={{.JUNIT_FILE}}
           --cov-report term --cov-report xml:{{.COVERAGE_FILE}}
           --cov-report html:{{.COVERAGE_DIR}} --cov={{.PACKAGE}}
-          --html={{.HTML_FILE}} --self-contained-html
+          --html={{.HTML_FILE}} --self-contained-html &&
+          poetry run coverage combine
+      - platforms: [ darwin, linux ]
+        cmd: >
+          poetry run python -m coverage run --parallel-mode
+          -m pytest --memray --junitxml={{.JUNIT_FILE}}
+          --cov-report term --cov-report xml:{{.COVERAGE_FILE}}
+          --cov-report html:{{.COVERAGE_DIR}} --cov={{.PACKAGE}}
+          --html={{.HTML_FILE}} --self-contained-html &&
+          poetry run coverage combine
       - cmd: >
           poetry run genbadge coverage -l
           -i {{.COVERAGE_FILE}} -o {{.BADGE_COVERAGE}}
