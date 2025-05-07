@@ -143,7 +143,7 @@ class PdfExtract(WorkflowPlugin):
     ) -> None:
         if page_selection:
             validate_page_selection(page_selection)
-        self.page_selection = page_selection
+        self.page_numbers = parse_page_selection(page_selection)
 
         if table_strategy not in TABLE_STRATEGY_PARAMETER_CHOICES:
             raise ValueError(f"Invalid table strategy: {table_strategy}")
@@ -178,19 +178,18 @@ class PdfExtract(WorkflowPlugin):
     @staticmethod
     def extract_pdf_data_worker(
         filename: str,
-        page_selection: str,
+        page_numbers: list,
         project_id: str,
         table_settings: dict,
         error_handling: str,
-    ) -> dict | None:
+    ) -> dict:
         """Extract structured PDF data (sequential processing)."""
         output: dict = {"metadata": {"Filename": filename}, "pages": []}
         binary_file = BytesIO(get_resource(project_id, filename))
         page_number = None
         try:
             with pdfplumber_open(binary_file) as pdf:
-                output["metadata"].update(pdf.metadata or {})  # type: ignore[attr-defined]
-                page_numbers = parse_page_selection(page_selection)
+                output["metadata"].update(pdf.metadata or {})
                 valid_page_numbers = (
                     [_ for _ in page_numbers if _ <= len(pdf.pages)]
                     if page_numbers
@@ -281,7 +280,7 @@ class PdfExtract(WorkflowPlugin):
                 executor.submit(
                     PdfExtract.extract_pdf_data_worker,
                     filename,
-                    self.page_selection,
+                    self.page_numbers,
                     self.context.task.project_id(),
                     self.table_strategy,
                     self.error_handling,
