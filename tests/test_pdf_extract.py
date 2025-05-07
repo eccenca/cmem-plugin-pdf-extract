@@ -248,10 +248,7 @@ def test_custom_table_strategy_parameter() -> None:
     assert plugin.table_strategy == safe_load(CUSTOM_TABLE_STRATEGY_SETTING)
 
     with pytest.raises(ValueError, match="No custom table strategy defined"):
-        PdfExtract(
-            regex="test",
-            table_strategy="custom",
-        )
+        PdfExtract(regex="test", table_strategy="custom")
 
     with pytest.raises(YAMLError, match="Invalid custom table strategy"):
         PdfExtract(
@@ -264,28 +261,16 @@ def test_custom_table_strategy_parameter() -> None:
 def test_invalid_page_selection_format() -> None:
     """Test page selection parsing."""
     with pytest.raises(ValueError, match="Invalid page selection format"):
-        PdfExtract(
-            regex="test",
-            page_selection="invalid",
-        )
+        PdfExtract(regex="test", page_selection="invalid")
 
     with pytest.raises(ValueError, match=r"Invalid range in page selection: 2-1 \(start > end\)"):
-        PdfExtract(
-            regex="test",
-            page_selection="2-1",
-        )
+        PdfExtract(regex="test", page_selection="2-1")
 
     with pytest.raises(ValueError, match=r"Page numbers must be ≥ 1: 0"):
-        PdfExtract(
-            regex="test",
-            page_selection="0,1",
-        )
+        PdfExtract(regex="test", page_selection="0,1")
 
     with pytest.raises(ValueError, match=r"Page numbers must be ≥ 1: 0"):
-        PdfExtract(
-            regex="test",
-            page_selection="5,0-2",
-        )
+        PdfExtract(regex="test", page_selection="5,0-2")
 
 
 @pytest.mark.usefixtures("setup_valid")
