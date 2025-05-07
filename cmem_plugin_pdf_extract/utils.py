@@ -17,7 +17,7 @@ def validate_page_selection(page_str: str) -> None:
       - After commas (e.g., "1, 2" is allowed)
     - No spaces within numbers or ranges (e.g., "1 - 5" is invalid)
     - Range start must be ≤ end (e.g., "5-2" is invalid)
-    - No zero values (e.g., "0", "0-3", "3-0" are all invalid)
+    - Page numbers must be ≥ 1
     """
     pattern = r"^\s*\d+(?:\s*-\s*\d+)?(?:\s*,\s*\d+(?:\s*-\s*\d+)?)*\s*$"
     if not re.fullmatch(pattern, page_str):
@@ -27,14 +27,14 @@ def validate_page_selection(page_str: str) -> None:
         if "-" in part:
             start_str, end_str = part.split("-")
             start, end = int(start_str), int(end_str)
-            if start == 0 or end == 0:
+            if start < 1 or end < 1:
                 raise ValueError(f"Page numbers must be ≥ 1: {part}")
             if start > end:
                 raise ValueError(f"Invalid range in page selection: {part} (start > end)")
         else:
             page = int(part)
-            if page == 0:
-                raise ValueError("Page number must be ≥ 1")
+            if page < 1:
+                raise ValueError(f"Page number must be ≥ 1: {page}")
 
 
 def parse_page_selection(page_str: str) -> list:
