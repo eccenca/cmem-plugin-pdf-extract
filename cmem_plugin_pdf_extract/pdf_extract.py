@@ -1,5 +1,6 @@
 """Extract text from PDF files"""
 
+import os
 import re
 from collections import OrderedDict
 from collections.abc import Sequence
@@ -249,6 +250,7 @@ class PdfExtract(WorkflowPlugin):
         stderr_warning = None
         try:
             with get_stderr() as tmp:
+                os.write(2, b"[CI TEST] stderr capture test\n")
                 text = page.extract_text() or ""
                 tmp.seek(0)
                 stderr_output = tmp.read().decode("utf-8").strip()
