@@ -5,7 +5,6 @@ import sys
 from collections.abc import Generator
 from contextlib import contextmanager
 from io import StringIO
-from os import getenv
 
 
 def validate_page_selection(page_str: str) -> None:
@@ -53,56 +52,13 @@ def parse_page_selection(page_str: str) -> list:
     return sorted(set(pages))
 
 
-# @contextmanager
-# def get_stderr() -> Generator:
-#     """Get stderr"""
-#     stderr = StringIO()
-#     original_stderr = sys.stderr
-#     sys.stderr = stderr
-#     try:
-#         yield stderr
-#     finally:
-#         sys.stderr = original_stderr
-
-
 @contextmanager
 def get_stderr() -> Generator:
-    """Smart stderr capture that adapts to CI environments"""
-    if getenv("CI") == "true":
-        # Use more robust capture in CI
-        yield from _ci_stderr_capture()
-    else:
-        # Use simple capture elsewhere
-        yield from _simple_stderr_capture()
-
-
-def _simple_stderr_capture() -> Generator:
-    """Capture stderr"""
-    original = sys.stderr
-    buffer = StringIO()
-    sys.stderr = buffer
+    """Get stderr"""
+    stderr = StringIO()
+    original_stderr = sys.stderr
+    sys.stderr = stderr
     try:
-        yield buffer
+        yield stderr
     finally:
-        sys.stderr = original
-
-
-def _ci_stderr_capture() -> Generator:
-    """Capture stderr CI-optimised"""
-    original = sys.stderr
-    buffer = StringIO()
-
-    # Write to both buffer and original stderr
-    class TeeStderr:
-        def write(self, text: str) -> None:
-            buffer.write(text)
-            original.write(text)
-
-        def flush(self) -> None:
-            original.flush()
-
-    sys.stderr = TeeStderr()
-    try:
-        yield buffer
-    finally:
-        sys.stderr = original
+        sys.stderr = original_stderr
