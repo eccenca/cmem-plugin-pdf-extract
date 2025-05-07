@@ -1,8 +1,10 @@
 """Tests"""
 
+import io
 import os
 import re
 import sys
+import threading
 import warnings
 from collections.abc import Generator
 from contextlib import contextmanager
