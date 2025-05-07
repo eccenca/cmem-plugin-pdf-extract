@@ -6,10 +6,13 @@ import json
 from ast import literal_eval
 from collections import Counter
 from collections.abc import Generator
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from io import BytesIO
+from os import getenv
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 import pytest
 from cmem.cmempy.workspace.projects.project import delete_project, make_new_project
@@ -51,6 +54,16 @@ def unordered_deep_equal(list1: list, list2: list) -> bool:
     norm1 = [normalise(item) for item in list1]
     norm2 = [normalise(item) for item in list2]
     return Counter(norm1) == Counter(norm2)
+
+
+@pytest.fixture(autouse=True)
+def mock_multiprocessing() -> Generator:
+    """Replace ProcessPoolExecutor with ThreadPoolExecutor during tests"""
+    if getenv("CI"):  # Or 'TESTING' if you prefer
+        with mock.patch("concurrent.futures.ProcessPoolExecutor", ThreadPoolExecutor):
+            yield
+    else:
+        yield
 
 
 @pytest.fixture
