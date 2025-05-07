@@ -27,7 +27,7 @@ from tests.results import (
     FILE_PAGES_NOT_EXIST_RESULT,
     UUID4,
 )
-from tests.utils import TestExecutionContext
+from tests.utils import TestExecutionContext, TestPluginContext
 
 from . import __path__
 
@@ -130,7 +130,7 @@ def setup_page_selection() -> Generator:
 def test_one_entity_per_file() -> None:
     """Test result with table strategy "lines", one entity per file"""
     entities = PdfExtract(
-        regex=rf"^{UUID4}_.*\.pdf$",
+        regex=rf"{UUID4}_.*\.pdf",
         table_strategy="lines",
     ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
 
@@ -146,7 +146,7 @@ def test_one_entity_per_file() -> None:
 def test_one_entity() -> None:
     """Test result with table strategy "lines", all results in one entity value"""
     entities = PdfExtract(
-        regex=rf"^{UUID4}_.*\.pdf$",
+        regex=rf"{UUID4}_.*\.pdf",
         all_files=True,
         table_strategy="lines",
     ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
@@ -163,7 +163,7 @@ def test_one_entity() -> None:
 def test_table_strategy_text() -> None:
     """Test if table strategy "text" parameter is valid"""
     PdfExtract(
-        regex=rf"^{UUID4}_.*\.pdf$",
+        regex=rf"{UUID4}_.*\.pdf",
         all_files=True,
         table_strategy="text",
     ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
@@ -274,3 +274,22 @@ def test_invalid_page_selection_format() -> None:
             regex="test",
             page_selection="2-1",
         )
+
+    with pytest.raises(ValueError, match=r"Page numbers must be ≥ 1: 0"):
+        PdfExtract(
+            regex="test",
+            page_selection="0,1",
+        )
+
+    with pytest.raises(ValueError, match=r"Page numbers must be ≥ 1: 0"):
+        PdfExtract(
+            regex="test",
+            page_selection="5,0-2",
+        )
+
+
+@pytest.mark.usefixtures("setup_valid")
+def test_regex_plugin_action() -> None:
+    """Test result with table strategy "lines", one entity per file"""
+    plugin = PdfExtract(regex=rf"{UUID4}_.*\.pdf")
+    assert plugin.test_regex(TestPluginContext(PROJECT_ID)) == "2 files found."

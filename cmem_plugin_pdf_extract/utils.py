@@ -27,14 +27,14 @@ def validate_page_selection(page_str: str) -> None:
         if "-" in part:
             start_str, end_str = part.split("-")
             start, end = int(start_str), int(end_str)
-            if start < 1 or end < 1:
+            if start == 0 or end == 0:
                 raise ValueError(f"Page numbers must be ≥ 1: {part}")
             if start > end:
                 raise ValueError(f"Invalid range in page selection: {part} (start > end)")
         else:
             page = int(part)
-            if page < 1:
-                raise ValueError(f"Page number must be ≥ 1: {page}")
+            if page == 0:
+                raise ValueError(f"Page numbers must be ≥ 1: {page}")
 
 
 def parse_page_selection(page_str: str) -> list:

@@ -9,8 +9,12 @@ from os import cpu_count
 
 from cmem.cmempy.workspace.projects.resources import get_resources
 from cmem.cmempy.workspace.projects.resources.resource import get_resource
-from cmem_plugin_base.dataintegration.context import ExecutionContext, ExecutionReport
-from cmem_plugin_base.dataintegration.description import Icon, Plugin, PluginParameter
+from cmem_plugin_base.dataintegration.context import (
+    ExecutionContext,
+    ExecutionReport,
+    PluginContext,
+)
+from cmem_plugin_base.dataintegration.description import Icon, Plugin, PluginAction, PluginParameter
 from cmem_plugin_base.dataintegration.entity import Entities, Entity, EntityPath, EntitySchema
 from cmem_plugin_base.dataintegration.parameter.choice import ChoiceParameterType
 from cmem_plugin_base.dataintegration.parameter.multiline import MultilineStringParameterType
@@ -64,6 +68,13 @@ TYPE_URI = "urn:x-eccenca:PdfExtract"
     description="Extract text and tables from PDF files",
     documentation=DOC,
     icon=Icon(package=__package__, file_name="ic--baseline-picture-as-pdf.svg"),
+    actions=[
+        PluginAction(
+            name="test_regex",
+            label="Test regex pattern",
+            description="Test the regular expression pattern for file identification.",
+        )
+    ],
     parameters=[
         PluginParameter(
             param_type=StringParameterType(),
@@ -168,12 +179,18 @@ class PdfExtract(WorkflowPlugin):
             raise ValueError(f"Invalid error handling mode: {error_handling}")
         self.error_handling = error_handling
 
-        self.regex = regex
+        self.regex = rf"{regex}"
         self.all_files = all_files
         self.max_processes = max_processes
         self.input_ports = FixedNumberOfInputs([])
         self.schema = EntitySchema(type_uri=TYPE_URI, paths=[EntityPath("pdf_extract_output")])
         self.output_port = FixedSchemaPort(self.schema)
+
+    def test_regex(self, context: PluginContext) -> str:
+        """Plugin Action to test the regex pattern against existing files"""
+        setup_cmempy_user_access(context.user)
+        files_found = len(self.get_file_list(context.project_id))
+        return f"{files_found} file{'' if files_found == 1 else 's'} found."
 
     @staticmethod
     def extract_pdf_data_worker(
@@ -306,7 +323,7 @@ class PdfExtract(WorkflowPlugin):
                 self.context.report.update(
                     ExecutionReport(
                         entity_count=i,
-                        operation_desc=f"{'file' if i == 1 else 'files'} processed",
+                        operation_desc=f"file{'' if i == 1 else 's'} processed",
                     )
                 )
 
@@ -317,16 +334,16 @@ class PdfExtract(WorkflowPlugin):
 
         return Entities(entities=entities, schema=self.schema)
 
+    def get_file_list(self, project_id: str) -> list:
+        """Get file list using regex pattern"""
+        return [r["name"] for r in get_resources(project_id) if re.fullmatch(self.regex, r["name"])]
+
     def execute(self, inputs: Sequence[Entities], context: ExecutionContext) -> Entities:  # noqa: ARG002
         """Run the workflow operator."""
         context.report.update(ExecutionReport(entity_count=0, operation_desc="files processed"))
         self.context = context
         setup_cmempy_user_access(context.user)
-        filenames = [
-            r["name"]
-            for r in get_resources(context.task.project_id())
-            if re.fullmatch(rf"{self.regex}", r["name"])
-        ]
+        filenames = self.get_file_list(context.task.project_id())
         if not filenames:
             raise FileNotFoundError("No matching files found")
         return self.get_entities(filenames)
