@@ -6,7 +6,6 @@ from collections import Counter
 from collections.abc import Generator
 from contextlib import suppress
 from io import BytesIO
-from os import getenv
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +13,6 @@ import pytest
 from cmem.cmempy.workspace.projects.project import delete_project, make_new_project
 from cmem.cmempy.workspace.projects.resources.resource import create_resource
 from cmem_plugin_base.dataintegration.entity import EntityPath
-from coverage import Coverage
 from pdfplumber.utils.exceptions import PdfminerException
 from yaml import YAMLError, safe_load
 
@@ -51,19 +49,6 @@ def unordered_deep_equal(list1: list, list2: list) -> bool:
     norm1 = [normalise(item) for item in list1]
     norm2 = [normalise(item) for item in list2]
     return Counter(norm1) == Counter(norm2)
-
-
-@pytest.fixture(autouse=True)
-def cover_process_pool() -> Generator:
-    """Enable coverage in ProcessPoolExecutor workers in CI"""
-    if getenv("CI"):  # Only needed in CI
-        cov = Coverage(config_file=True)
-        cov.start()
-        yield
-        cov.stop()
-        cov.save()
-    else:
-        yield
 
 
 @pytest.fixture
