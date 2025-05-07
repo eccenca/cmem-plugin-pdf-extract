@@ -3,12 +3,13 @@
 # ruff: noqa: ERA001 F401
 
 import json
+import sys
 from ast import literal_eval
 from collections import Counter
 from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
-from io import BytesIO
+from io import BytesIO, StringIO
 from os import getenv
 from pathlib import Path
 from typing import Any
@@ -57,13 +58,24 @@ def unordered_deep_equal(list1: list, list2: list) -> bool:
 
 
 @pytest.fixture(autouse=True)
-def mock_multiprocessing() -> Generator:
-    """Replace ProcessPoolExecutor with ThreadPoolExecutor during tests"""
-    if getenv("CI"):  # Or 'TESTING' if you prefer
-        with mock.patch("concurrent.futures.ProcessPoolExecutor", ThreadPoolExecutor):
-            yield
-    else:
+def ci_test_environment() -> Generator:
+    """Full CI environment normalization"""
+    if not getenv("CI"):
         yield
+        return
+
+    # 1. Fix multiprocessing coverage
+    with mock.patch("concurrent.futures.ProcessPoolExecutor", ThreadPoolExecutor):
+        # 2. Fix stderr capture
+        original_stderr = sys.stderr
+        sys.stderr = StringIO()
+
+        # 3. Force consistent Python behavior
+        with mock.patch.dict("os.environ", {"PYTHONHASHSEED": "42", "PYTHONFAULTHANDLER": "1"}):
+            try:
+                yield
+            finally:
+                sys.stderr = original_stderr
 
 
 @pytest.fixture
