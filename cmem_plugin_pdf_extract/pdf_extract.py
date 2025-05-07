@@ -248,15 +248,24 @@ class PdfExtract(WorkflowPlugin):
         table_warning = None
         stderr_warning = None
         try:
-            with get_stderr() as stderr:
+            # with get_stderr() as stderr:
+            #     text = page.extract_text() or ""
+            # stderr_output = stderr.getvalue().strip()
+            with get_stderr() as stderr_file:
                 text = page.extract_text() or ""
-            stderr_output = stderr.getvalue().strip()
+                stderr_file.seek(0)
+                stderr_output = stderr_file.read().decode("utf-8").strip()
             if not text and stderr_output:
                 text_warning = f"Text extraction error: {stderr_output}"
 
-            with get_stderr() as stderr:
+            # with get_stderr() as stderr:
+            #     tables = page.extract_tables(table_settings) or []
+            # stderr_output = stderr.getvalue().strip()
+            with get_stderr() as stderr_file:
                 tables = page.extract_tables(table_settings) or []
-            stderr_output = stderr.getvalue().strip()
+                stderr_file.seek(0)
+                stderr_output = stderr_file.read().decode("utf-8").strip()
+
             if not tables and stderr_output:
                 table_warning = f"Table extraction error: {stderr_output}"
 
