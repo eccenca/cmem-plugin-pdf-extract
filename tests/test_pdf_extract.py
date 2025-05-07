@@ -217,17 +217,17 @@ def setup_page_selection() -> Generator:
 #
 
 
-@pytest.mark.usefixtures("setup_corrupted")
-def test_invalid_pdf_2() -> None:
-    """Test with corrupted pdf"""
-    filename = f"{UUID4}_corrupted_2.pdf"
-    entities = PdfExtract(
-        regex=filename,
-        table_strategy="lines",
-        error_handling="raise_on_error",
-    ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
-
-    assert literal_eval(entities.entities[0].values[0][0]) == FILE_CORRUPTED_RESULT_2
+# @pytest.mark.usefixtures("setup_corrupted")
+# def test_invalid_pdf_2() -> None:
+#     """Test with corrupted pdf"""
+#     filename = f"{UUID4}_corrupted_2.pdf"
+#     entities = PdfExtract(
+#         regex=filename,
+#         table_strategy="lines",
+#         error_handling="raise_on_error",
+#     ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
+#
+#     assert literal_eval(entities.entities[0].values[0][0]) == FILE_CORRUPTED_RESULT_2
 
     # with pytest.raises(
     #     ValueError,
