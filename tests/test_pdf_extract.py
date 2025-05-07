@@ -1,6 +1,7 @@
 """Plugin tests."""
 
 import json
+import os
 from ast import literal_eval
 from collections import Counter
 from collections.abc import Generator
@@ -296,3 +297,10 @@ def test_invalid_pdf_2() -> None:
 #     """Test result with table strategy "lines", one entity per file"""
 #     plugin = PdfExtract(regex=rf"{UUID4}_.*\.pdf")
 #     assert plugin.test_regex(TestPluginContext(PROJECT_ID)) == "2 files found."
+
+
+def test_your_function(capfd: pytest.CaptureFixture) -> None:
+    """Test capture"""
+    os.write(2, b"[CI TEST] stderr capture test\n")
+    captured = capfd.readouterr()
+    assert "[CI TEST]" in captured.err

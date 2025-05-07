@@ -1,4 +1,5 @@
 """Tests"""
+
 import os
 import re
 import sys
@@ -64,6 +65,7 @@ def get_stderr() -> Generator:
         stderr.flush()  # Ensure all output is written
     finally:
         sys.stderr = old_stderr
+
 
 # @contextmanager
 # def get_stderr() -> Generator:
