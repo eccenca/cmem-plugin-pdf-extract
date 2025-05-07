@@ -90,6 +90,12 @@ Defines a custom table extraction strategy using YAML syntax. Only used if "cust
 Defines the maximum number of processes to use for concurrent file processing. By default, this is set to (number of virtual cores - 1).
 
 
+## Test regular expression
+
+Clicking the "Test regex pattern" button displays the number of files in the current project that match the regular expression
+specified with the ["File name regex filter"](#parameter_doc_regex) parameter.
+
+
 ## Development
 
 - Run [task](https://taskfile.dev/) to see all major development tasks.
