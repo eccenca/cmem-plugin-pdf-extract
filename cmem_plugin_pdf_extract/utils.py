@@ -1,12 +1,10 @@
 """Tests"""
 
-import os
 import re
 import sys
 from collections.abc import Generator
 from contextlib import contextmanager
 from io import StringIO
-from tempfile import TemporaryFile
 
 
 def validate_page_selection(page_str: str) -> None:
@@ -54,33 +52,13 @@ def parse_page_selection(page_str: str) -> list:
     return sorted(set(pages))
 
 
-# @contextmanager
-# def get_stderr() -> Generator:
-#     """Get stderr"""
-#     old_stderr = sys.stderr
-#     try:
-#         stderr = StringIO()
-#         sys.stderr = stderr
-#         yield stderr
-#         stderr.flush()  # Ensure all output is written
-#     finally:
-#         sys.stderr = old_stderr
-
-
 @contextmanager
 def get_stderr() -> Generator:
-    """Capture both Python-level and FD-level stderr."""
-    stderr_fd = sys.stderr.fileno()
-    saved_fd = os.dup(stderr_fd)  # Save original FD
-    saved_sys_stderr = sys.stderr  # Save Python-level stderr
-
-    with TemporaryFile(mode="w+b") as tmp:
-        os.dup2(tmp.fileno(), stderr_fd)  # Redirect FD 2 to tmp
-        sys.stderr = os.fdopen(tmp.fileno(), "w")  # Replace sys.stderr
-        try:
-            yield tmp
-        finally:
-            tmp.flush()
-            os.dup2(saved_fd, stderr_fd)  # Restore FD 2
-            sys.stderr = saved_sys_stderr  # Restore sys.stderr
-            os.close(saved_fd)
+    """Get stderr"""
+    stderr = StringIO()
+    original_stderr = sys.stderr
+    sys.stderr = stderr
+    try:
+        yield stderr
+    finally:
+        sys.stderr = original_stderr
