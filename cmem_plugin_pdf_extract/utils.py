@@ -1,10 +1,10 @@
 """Tests"""
-
 import os
 import re
 import sys
 from collections.abc import Generator
 from contextlib import contextmanager
+from io import StringIO
 from tempfile import TemporaryFile
 
 
@@ -55,15 +55,27 @@ def parse_page_selection(page_str: str) -> list:
 
 @contextmanager
 def get_stderr() -> Generator:
-    """Capture all stderr output."""
-    original_fd = sys.stderr.fileno()
-    saved_fd = os.dup(original_fd)
+    """Get stderr"""
+    old_stderr = sys.stderr
+    try:
+        stderr = StringIO()
+        sys.stderr = stderr
+        yield stderr
+        stderr.flush()  # Ensure all output is written
+    finally:
+        sys.stderr = old_stderr
 
-    with TemporaryFile(mode="w+b") as tmp:
-        os.dup2(tmp.fileno(), original_fd)
-        try:
-            yield tmp
-        finally:
-            os.dup2(saved_fd, original_fd)
-            os.close(saved_fd)
-            tmp.seek(0)
+# @contextmanager
+# def get_stderr() -> Generator:
+#     """Capture all stderr output."""
+#     original_fd = sys.stderr.fileno()
+#     saved_fd = os.dup(original_fd)
+#
+#     with TemporaryFile(mode="w+b") as tmp:
+#         os.dup2(tmp.fileno(), original_fd)
+#         try:
+#             yield tmp
+#         finally:
+#             os.dup2(saved_fd, original_fd)
+#             os.close(saved_fd)
+#             tmp.seek(0)

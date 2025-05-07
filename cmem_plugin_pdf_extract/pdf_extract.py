@@ -1,6 +1,5 @@
 """Extract text from PDF files"""
 
-import os
 import re
 from collections import OrderedDict
 from collections.abc import Sequence
@@ -249,19 +248,15 @@ class PdfExtract(WorkflowPlugin):
         table_warning = None
         stderr_warning = None
         try:
-            with get_stderr() as tmp:
-                os.write(2, b"[CI TEST] stderr capture test\n")
+            with get_stderr() as stderr:
                 text = page.extract_text() or ""
-                tmp.seek(0)
-                stderr_output = tmp.read().decode("utf-8").strip()
+            stderr_output = stderr.getvalue().strip()
             if not text and stderr_output:
                 text_warning = f"Text extraction error: {stderr_output}"
 
-            with get_stderr() as tmp:
+            with get_stderr() as stderr:
                 tables = page.extract_tables(table_settings) or []
-                tmp.seek(0)
-                stderr_output = tmp.read().decode("utf-8").strip()
-
+            stderr_output = stderr.getvalue().strip()
             if not tables and stderr_output:
                 table_warning = f"Table extraction error: {stderr_output}"
 
