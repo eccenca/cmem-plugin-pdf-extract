@@ -3,17 +3,13 @@
 # ruff: noqa: ERA001 F401
 
 import json
-import sys
 from ast import literal_eval
 from collections import Counter
 from collections.abc import Generator
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
-from io import BytesIO, StringIO
-from os import getenv
+from io import BytesIO
 from pathlib import Path
 from typing import Any
-from unittest import mock
 
 import pytest
 from cmem.cmempy.workspace.projects.project import delete_project, make_new_project
@@ -55,27 +51,6 @@ def unordered_deep_equal(list1: list, list2: list) -> bool:
     norm1 = [normalise(item) for item in list1]
     norm2 = [normalise(item) for item in list2]
     return Counter(norm1) == Counter(norm2)
-
-
-@pytest.fixture(autouse=True)
-def ci_test_environment() -> Generator:
-    """Full CI environment normalization"""
-    if not getenv("CI"):
-        yield
-        return
-
-    # 1. Fix multiprocessing coverage
-    with mock.patch("concurrent.futures.ProcessPoolExecutor", ThreadPoolExecutor):
-        # 2. Fix stderr capture
-        original_stderr = sys.stderr
-        sys.stderr = StringIO()
-
-        # 3. Force consistent Python behavior
-        with mock.patch.dict("os.environ", {"PYTHONHASHSEED": "42", "PYTHONFAULTHANDLER": "1"}):
-            try:
-                yield
-            finally:
-                sys.stderr = original_stderr
 
 
 @pytest.fixture
