@@ -129,7 +129,7 @@ tasks:
           poetry run pytest --memray --junitxml={{.JUNIT_FILE}}
           --cov-report term --cov-report xml:{{.COVERAGE_FILE}}
           --cov-report html:{{.COVERAGE_DIR}} --cov={{.PACKAGE}}
-          --html={{.HTML_FILE}} --self-contained-html --capture=tee-sys
+          --html={{.HTML_FILE}} --self-contained-html
       - cmd: >
           poetry run genbadge coverage -l
           -i {{.COVERAGE_FILE}} -o {{.BADGE_COVERAGE}}
