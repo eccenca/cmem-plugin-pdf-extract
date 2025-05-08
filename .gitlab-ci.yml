@@ -57,6 +57,8 @@ pytest:
       - dist/badge-tests.svg
       - dist/coverage
       - dist/coverage.xml
+    variables:
+      CI: "true"
 
 safety:
   stage: test

@@ -1,5 +1,6 @@
 """Tests"""
 
+import os
 import re
 import sys
 from collections.abc import Generator
@@ -54,11 +55,38 @@ def parse_page_selection(page_str: str) -> list:
 
 @contextmanager
 def get_stderr() -> Generator:
-    """Get stderr"""
-    stderr = StringIO()
-    original_stderr = sys.stderr
-    sys.stderr = stderr
-    try:
-        yield stderr
-    finally:
-        sys.stderr = original_stderr
+    """Robust stderr capture that works with multiprocessing in CI"""
+    if os.getenv("CI"):
+        # CI-specific handling
+        with _ci_stderr_capture() as captured:
+            yield captured
+    else:
+        # Original local version
+        original = sys.stderr
+        sys.stderr = buffer = StringIO()
+        try:
+            yield buffer
+        finally:
+            sys.stderr = original
+
+
+@contextmanager
+def _ci_stderr_capture() -> Generator:
+    """Handle stderr for CI environments"""
+    from tempfile import TemporaryFile
+
+    with TemporaryFile(mode="w+") as tmp:
+        # Duplicate stderr fd
+        stderr_fd = sys.stderr.fileno()
+        saved_fd = os.dup(stderr_fd)
+
+        # Redirect to our temp file
+        os.dup2(tmp.fileno(), stderr_fd)
+
+        try:
+            yield tmp
+        finally:
+            # Restore original stderr
+            os.dup2(saved_fd, stderr_fd)
+            os.close(saved_fd)
+            tmp.seek(0)
