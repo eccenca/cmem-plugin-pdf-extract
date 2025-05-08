@@ -5,7 +5,7 @@ from collections import OrderedDict
 from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from io import BytesIO
-from os import cpu_count
+from os import cpu_count, getenv
 
 from cmem.cmempy.workspace.projects.resources import get_resources
 from cmem.cmempy.workspace.projects.resources.resource import get_resource
@@ -250,13 +250,13 @@ class PdfExtract(WorkflowPlugin):
         try:
             with get_stderr() as stderr:
                 text = page.extract_text() or ""
-            stderr_output = stderr.getvalue().strip()
+            stderr_output = stderr.getvalue().strip() if not getenv("CI") else stderr.read().strip()
             if not text and stderr_output:
                 text_warning = f"Text extraction error: {stderr_output}"
 
             with get_stderr() as stderr:
                 tables = page.extract_tables(table_settings) or []
-            stderr_output = stderr.getvalue().strip()
+            stderr_output = stderr.getvalue().strip() if not getenv("CI") else stderr.read().strip()
             if not tables and stderr_output:
                 table_warning = f"Table extraction error: {stderr_output}"
 
