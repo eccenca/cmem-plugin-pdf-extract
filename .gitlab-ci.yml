@@ -43,6 +43,7 @@ pytest:
   stage: test
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   script:
+    - export CI=true
     - task check:pytest
   artifacts:
     when: always
@@ -57,8 +58,6 @@ pytest:
       - dist/badge-tests.svg
       - dist/coverage
       - dist/coverage.xml
-    variables:
-      CI: "true"
 
 safety:
   stage: test
