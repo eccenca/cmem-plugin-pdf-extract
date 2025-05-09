@@ -72,10 +72,7 @@ def get_logs() -> Generator:
     logger = logging.getLogger("pdfminer")
     handler = logging.StreamHandler(log_stream)
     logger.addHandler(handler)
-    old_level = logger.level
-    logger.setLevel(logging.WARNING)
     try:
         yield log_stream
     finally:
         logger.removeHandler(handler)
-        logger.setLevel(old_level)
