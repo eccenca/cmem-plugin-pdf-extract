@@ -54,18 +54,6 @@ def parse_page_selection(page_str: str) -> list:
 
 
 @contextmanager
-def get_stderr() -> Generator:
-    """Get stderr"""
-    stderr = StringIO()
-    original_stderr = sys.stderr
-    sys.stderr = stderr
-    try:
-        yield stderr
-    finally:
-        sys.stderr = original_stderr
-
-
-@contextmanager
 def get_logs() -> Generator:
     """Get logs"""
     log_stream = StringIO()
