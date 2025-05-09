@@ -2,7 +2,6 @@
 
 import logging
 import re
-import sys
 from collections.abc import Generator
 from contextlib import contextmanager
 from io import StringIO
