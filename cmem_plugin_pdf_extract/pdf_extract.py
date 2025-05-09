@@ -35,7 +35,11 @@ from cmem_plugin_pdf_extract.table_extraction_strategies import (
     CUSTOM_TABLE_STRATEGY_DEFAULT,
     TABLE_EXTRACTION_STRATEGIES,
 )
-from cmem_plugin_pdf_extract.utils import get_stderr, parse_page_selection, validate_page_selection
+from cmem_plugin_pdf_extract.utils import (
+    get_logs,
+    parse_page_selection,
+    validate_page_selection,
+)
 
 MAX_PROCESSES_DEFAULT = cpu_count() - 1  # type: ignore[operator]
 TABLE_LINES = "lines"
@@ -248,17 +252,17 @@ class PdfExtract(WorkflowPlugin):
         table_warning = None
         stderr_warning = None
         try:
-            with get_stderr() as stderr:
-                text = page.extract_text() or ""
-            stderr_output = stderr.getvalue().strip()
-            if not text and stderr_output:
-                text_warning = f"Text extraction error: {stderr_output}"
+            with get_logs() as log_output:
+                text = page.extract_text()
+            logs = log_output.getvalue().strip()
+            if not text and logs:
+                text_warning = f"Text extraction error: {logs}"
 
-            with get_stderr() as stderr:
+            with get_logs() as log_output:
                 tables = page.extract_tables(table_settings) or []
-            stderr_output = stderr.getvalue().strip()
-            if not tables and stderr_output:
-                table_warning = f"Table extraction error: {stderr_output}"
+            logs = log_output.getvalue().strip()
+            if not tables and logs:
+                table_warning = f"Table extraction error: {logs}"
 
             if text_warning or table_warning:
                 stderr_warning = (

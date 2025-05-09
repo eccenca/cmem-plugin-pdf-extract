@@ -1,5 +1,6 @@
 """Tests"""
 
+import logging
 import re
 import sys
 from collections.abc import Generator
@@ -62,3 +63,19 @@ def get_stderr() -> Generator:
         yield stderr
     finally:
         sys.stderr = original_stderr
+
+
+@contextmanager
+def get_logs() -> Generator:
+    """Get logs"""
+    log_stream = StringIO()
+    logger = logging.getLogger("pdfminer")
+    handler = logging.StreamHandler(log_stream)
+    logger.addHandler(handler)
+    old_level = logger.level
+    logger.setLevel(logging.WARNING)
+    try:
+        yield log_stream
+    finally:
+        logger.removeHandler(handler)
+        logger.setLevel(old_level)
