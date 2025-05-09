@@ -1,7 +1,7 @@
 """Tests"""
 
+import logging
 import re
-import sys
 from collections.abc import Generator
 from contextlib import contextmanager
 from io import StringIO
@@ -53,12 +53,18 @@ def parse_page_selection(page_str: str) -> list:
 
 
 @contextmanager
-def get_stderr() -> Generator:
-    """Get stderr"""
-    stderr = StringIO()
-    original_stderr = sys.stderr
-    sys.stderr = stderr
+def capture_pdfminer_logs(level: int = logging.WARNING) -> Generator:
+    log_stream = StringIO()
+    handler = logging.StreamHandler(log_stream)
+    handler.setLevel(level)
+
+    logger = logging.getLogger("pdfminer")
+    original_level = logger.level
+    logger.setLevel(level)
+
+    logger.addHandler(handler)
     try:
-        yield stderr
+        yield log_stream
     finally:
-        sys.stderr = original_stderr
+        logger.removeHandler(handler)
+        logger.setLevel(original_level)
