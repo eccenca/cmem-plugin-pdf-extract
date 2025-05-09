@@ -1,7 +1,5 @@
 """Plugin tests."""
 
-# ruff: noqa: ERA001 F401
-
 import json
 from ast import literal_eval
 from collections import Counter
@@ -225,9 +223,6 @@ def test_invalid_pdf_2() -> None:
         table_strategy="lines",
         error_handling="raise_on_error",
     ).execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
-
-    with open("test.txt", "w") as f:
-        f.write(entities.entities[0].values[0][0])
 
     assert literal_eval(entities.entities[0].values[0][0]) == FILE_CORRUPTED_RESULT_2
 

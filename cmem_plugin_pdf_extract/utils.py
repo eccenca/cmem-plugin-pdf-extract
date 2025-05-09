@@ -54,6 +54,7 @@ def parse_page_selection(page_str: str) -> list:
 
 @contextmanager
 def capture_pdfminer_logs(level: int = logging.WARNING) -> Generator:
+    """Capture pdfminer logs."""
     log_stream = StringIO()
     handler = logging.StreamHandler(log_stream)
     handler.setLevel(level)
