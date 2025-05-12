@@ -85,7 +85,9 @@ TYPE_URI = "urn:x-eccenca:PdfExtract"
             param_type=StringParameterType(),
             name="regex",
             label="File name regex filter",
-            description="Regular expression for filtering resources of the project.",
+            description="Regular expression for filtering resources of the project. If there is an "
+            "input connected to this workflow, the regular expression will filter the "
+            "incoming entities of that input instead of the project resources.",
         ),
         PluginParameter(
             param_type=BoolParameterType(),
