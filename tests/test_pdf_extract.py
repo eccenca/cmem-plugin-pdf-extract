@@ -8,7 +8,8 @@ from collections import Counter
 from typing import Any
 
 import pytest
-from cmem_plugin_base.dataintegration.entity import EntityPath
+from cmem_plugin_base.dataintegration.entity import Entities, EntityPath
+from cmem_plugin_base.dataintegration.typed_entities.file import FileEntitySchema, LocalFile
 from pdfplumber.utils.exceptions import PdfminerException
 from yaml import YAMLError, safe_load
 
@@ -18,6 +19,7 @@ from cmem_plugin_pdf_extract.utils import parse_page_selection
 from tests.results import (
     CUSTOM_TABLE_STRATEGY_SETTING,
     FILE_1_RESULT,
+    FILE_1_RESULT_INPUT,
     FILE_2_RESULT,
     FILE_3_RESULT,
     FILE_CORRUPTED_RESULT_1,
@@ -181,3 +183,36 @@ def test_regex_plugin_action(testing_env_valid: TestingEnvironment) -> None:
     """Test plugin action"""
     result = testing_env_valid.extract_plugin.test_regex(TestPluginContext(PROJECT_ID))
     assert result == "2 files found."
+
+
+def test_input_port_pdf(testing_env_valid: TestingEnvironment) -> None:
+    """Test input via input port"""
+    schema = FileEntitySchema()
+    files = [LocalFile(path="tests/test_1.pdf", mime="application/pdf")]
+    entities = [schema.to_entity(file) for file in files]
+    input_entities = Entities(entities=entities, schema=schema)
+
+    plugin = testing_env_valid.extract_plugin
+    plugin.regex = "tests/test_1.pdf"
+
+    results = plugin.execute(inputs=[input_entities], context=TestExecutionContext())
+
+    assert literal_eval(results.entities[0].values[0][0]) == FILE_1_RESULT_INPUT
+
+    plugin.regex = "not-right.pdf"
+    with pytest.raises(FileNotFoundError, match="No matching files found"):
+        plugin.execute(inputs=[input_entities], context=TestExecutionContext())
+
+
+def test_input_port_no_pdf(testing_env_valid: TestingEnvironment) -> None:
+    """Test input via input port with no pdf file"""
+    schema = FileEntitySchema()
+    files = [LocalFile(path="tests/test_1.pdf", mime="no-right/pdf")]
+    entities = [schema.to_entity(file) for file in files]
+    input_entities = Entities(entities=entities, schema=schema)
+
+    plugin = testing_env_valid.extract_plugin
+    plugin.regex = "tests/test_1.pdf"
+
+    with pytest.raises(FileNotFoundError, match="No matching files found"):
+        plugin.execute(inputs=[input_entities], context=TestExecutionContext())
