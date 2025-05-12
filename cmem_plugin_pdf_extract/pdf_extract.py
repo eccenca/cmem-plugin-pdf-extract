@@ -36,7 +36,7 @@ from cmem_plugin_pdf_extract.table_extraction_strategies import (
     TABLE_EXTRACTION_STRATEGIES,
 )
 from cmem_plugin_pdf_extract.utils import (
-    get_logs,
+    capture_pdfminer_logs,
     parse_page_selection,
     validate_page_selection,
 )
@@ -110,8 +110,8 @@ TYPE_URI = "urn:x-eccenca:PdfExtract"
             label="Error Handling Mode",
             description="""The mode in which errors during the extraction are handled. If set to
             "Ignore", it will log errors and continue, returning empty or error-marked results
-            for files. When "Raise on errors and warnings" is selected, any output to STDERR from
-            the underlying PDF extraction module when extracting text and tables from pages is
+            for files. When "Raise on errors and warnings" is selected, any warning from the
+            underlying PDF extraction module when extracting text and tables from pages is
             treated as an error if empty results are returned.""",
             default_value=RAISE_ON_ERROR,
         ),
@@ -252,17 +252,17 @@ class PdfExtract(WorkflowPlugin):
         table_warning = None
         stderr_warning = None
         try:
-            with get_logs() as log_output:
-                text = page.extract_text()
-            logs = log_output.getvalue().strip()
-            if not text and logs:
-                text_warning = f"Text extraction error: {logs}"
+            with capture_pdfminer_logs() as stderr:
+                text = page.extract_text() or ""
+            stderr_output = stderr.getvalue().strip()
+            if not text and stderr_output:
+                text_warning = f"Text extraction error: {stderr_output}"
 
-            with get_logs() as log_output:
+            with capture_pdfminer_logs() as stderr:
                 tables = page.extract_tables(table_settings) or []
-            logs = log_output.getvalue().strip()
-            if not tables and logs:
-                table_warning = f"Table extraction error: {logs}"
+            stderr_output = stderr.getvalue().strip()
+            if not tables and stderr_output:
+                table_warning = f"Table extraction error: {stderr_output}"
 
             if text_warning or table_warning:
                 stderr_warning = (

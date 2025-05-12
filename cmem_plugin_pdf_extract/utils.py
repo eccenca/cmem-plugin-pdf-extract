@@ -53,13 +53,20 @@ def parse_page_selection(page_str: str) -> list:
 
 
 @contextmanager
-def get_logs() -> Generator:
-    """Get logs"""
+def capture_pdfminer_logs() -> Generator:
+    """Capture pdfminer logs."""
+    level = logging.WARNING
     log_stream = StringIO()
-    logger = logging.getLogger("pdfminer")
     handler = logging.StreamHandler(log_stream)
+    handler.setLevel(level)
+
+    logger = logging.getLogger("pdfminer")
+    original_level = logger.level
+    logger.setLevel(level)
+
     logger.addHandler(handler)
     try:
         yield log_stream
     finally:
         logger.removeHandler(handler)
+        logger.setLevel(original_level)

@@ -71,7 +71,7 @@ If enabled, the results of all files will be combined into a single output value
 Specifies how errors during PDF extraction should be handled.  
 - *Ignore*: Log errors and continue processing, returning empty or error-marked results.  
 - *Raise on errors*: Raise an error when extraction fails.  
-- *Raise on errors and warnings*: Treat any output to STDERR from the underlying PDF extraction module as an error.
+- *Raise on errors and warnings*: Treat any warning from the underlying PDF extraction module (pdfplumber) when extracting text and tables from pages as an error if empty results are returned.
 
 **<a id="parameter_doc_table_strategy">Table extraction strategy</a>**
 
