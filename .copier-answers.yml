@@ -3,8 +3,8 @@ _commit: v7.1.0
 _src_path: gh:eccenca/cmem-plugin-template
 author_mail: cmempy-developer@eccenca.com
 author_name: eccenca GmbH
-github_page: https://github.com/eccenca/cmem-plugin-pfd-extract
-project_description: Extract text from PDF files
+github_page: ''
+project_description: Extract text and tables from PDF documents.
 project_slug: pdf-extract
 project_type: plugin
 pypi: true
