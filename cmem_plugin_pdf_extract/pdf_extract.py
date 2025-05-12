@@ -20,6 +20,7 @@ from cmem_plugin_base.dataintegration.parameter.choice import ChoiceParameterTyp
 from cmem_plugin_base.dataintegration.parameter.multiline import MultilineStringParameterType
 from cmem_plugin_base.dataintegration.plugins import WorkflowPlugin
 from cmem_plugin_base.dataintegration.ports import FixedNumberOfInputs, FixedSchemaPort
+from cmem_plugin_base.dataintegration.typed_entities.file import FileEntitySchema
 from cmem_plugin_base.dataintegration.types import (
     BoolParameterType,
     IntParameterType,
@@ -186,7 +187,7 @@ class PdfExtract(WorkflowPlugin):
         self.regex = rf"{regex}"
         self.all_files = all_files
         self.max_processes = max_processes
-        self.input_ports = FixedNumberOfInputs([])
+        self.input_ports = FixedNumberOfInputs([FixedSchemaPort(schema=FileEntitySchema())])
         self.schema = EntitySchema(type_uri=TYPE_URI, paths=[EntityPath("pdf_extract_output")])
         self.output_port = FixedSchemaPort(self.schema)
 
@@ -197,16 +198,21 @@ class PdfExtract(WorkflowPlugin):
         return f"{files_found} file{'' if files_found == 1 else 's'} found."
 
     @staticmethod
-    def extract_pdf_data_worker(
+    def extract_pdf_data_worker(  # noqa: PLR0913
         filename: str,
         page_numbers: list,
         project_id: str,
         table_settings: dict,
         error_handling: str,
+        file_type: str,
     ) -> dict:
         """Extract structured PDF data (sequential processing)."""
         output: dict = {"metadata": {"Filename": filename}, "pages": []}
-        binary_file = BytesIO(get_resource(project_id, filename))
+        binary_file: str | BytesIO
+        if file_type == "Local":
+            binary_file = filename
+        else:
+            binary_file = BytesIO(get_resource(project_id, filename))
         page_number = None
         try:
             with pdfplumber_open(binary_file) as pdf:
@@ -291,7 +297,7 @@ class PdfExtract(WorkflowPlugin):
             "tables": tables,
         }
 
-    def get_entities(self, filenames: list) -> Entities:
+    def get_entities(self, filenames: list, filetype: str) -> Entities:
         """Make entities from extracted PDF data across multiple files."""
         entities = []
         all_output = []
@@ -305,6 +311,7 @@ class PdfExtract(WorkflowPlugin):
                     self.context.task.project_id(),
                     self.table_strategy,
                     self.error_handling,
+                    filetype,
                 ): filename
                 for filename in filenames
             }
@@ -342,12 +349,27 @@ class PdfExtract(WorkflowPlugin):
         """Get file list using regex pattern"""
         return [r["name"] for r in get_resources(project_id) if re.fullmatch(self.regex, r["name"])]
 
-    def execute(self, inputs: Sequence[Entities], context: ExecutionContext) -> Entities:  # noqa: ARG002
+    def execute(self, inputs: Sequence[Entities], context: ExecutionContext) -> Entities:
         """Run the workflow operator."""
         context.report.update(ExecutionReport(entity_count=0, operation_desc="files processed"))
         self.context = context
+
+        if len(inputs) != 0:
+            setup_cmempy_user_access(context.user)
+            filenames = []
+            for entity in inputs[0].entities:
+                file = FileEntitySchema().from_entity(entity=entity)
+                mime = file.mime
+                if mime == "application/pdf" and re.fullmatch(
+                    self.regex, file.path
+                ):
+                    filenames.append(file.path)
+            if not filenames:
+                raise FileNotFoundError("No matching files found")
+            return self.get_entities(filenames, "Local")
+
         setup_cmempy_user_access(context.user)
         filenames = self.get_file_list(context.task.project_id())
         if not filenames:
             raise FileNotFoundError("No matching files found")
-        return self.get_entities(filenames)
+        return self.get_entities(filenames, "Project")
