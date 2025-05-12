@@ -142,7 +142,6 @@ def test_invalid_pdf_2(testing_env_corrupted: TestingEnvironment) -> None:
         plugin.execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
 
 
-# STILL NEEDS REFACTOR
 def test_custom_table_strategy_parameter() -> None:
     """Test custom table extraction strategy parameter"""
     plugin = PdfExtract(
@@ -163,7 +162,6 @@ def test_custom_table_strategy_parameter() -> None:
         )
 
 
-# STILL NEEDS REFACTOR
 def test_invalid_page_selection_format() -> None:
     """Test page selection parsing."""
     with pytest.raises(ValueError, match="Invalid page selection format"):
@@ -179,7 +177,7 @@ def test_invalid_page_selection_format() -> None:
         PdfExtract(regex="test", page_selection="5,0-2")
 
 
-def test_regex_plugin_action_conftest(testing_env_valid: TestingEnvironment) -> None:
+def test_regex_plugin_action(testing_env_valid: TestingEnvironment) -> None:
     """Test plugin action"""
     result = testing_env_valid.extract_plugin.test_regex(TestPluginContext(PROJECT_ID))
     assert result == "2 files found."

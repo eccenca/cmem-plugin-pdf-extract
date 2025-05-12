@@ -119,85 +119,38 @@ class TestingEnvironment:
     extract_plugin: PdfExtract
 
 
-@pytest.fixture
-def testing_env_valid(setup_valid: Generator) -> TestingEnvironment:
-    """Provide testing environment"""
-    _ = setup_valid
-
+def create_testing_env(generator: Generator) -> TestingEnvironment:
+    """Help to create a TestingEnvironment"""
+    _ = generator
     regex = rf"{UUID4}_.*\.pdf"
-    all_files: bool = False
-    page_selection: str = ""
-    error_handling: str = RAISE_ON_ERROR
-    table_strategy: str = TABLE_LINES
-    custom_table_strategy: str = CUSTOM_TABLE_STRATEGY_DEFAULT
-    max_processes: int = MAX_PROCESSES_DEFAULT
-
     extract_plugin = PdfExtract(
         regex=regex,
-        all_files=all_files,
-        page_selection=page_selection,
-        error_handling=error_handling,
-        table_strategy=table_strategy,
-        custom_table_strategy=custom_table_strategy,
-        max_processes=max_processes,
+        all_files=False,
+        page_selection="",
+        error_handling=RAISE_ON_ERROR,
+        table_strategy=TABLE_LINES,
+        custom_table_strategy=CUSTOM_TABLE_STRATEGY_DEFAULT,
+        max_processes=MAX_PROCESSES_DEFAULT,
     )
     return TestingEnvironment(
         regex=regex,
         extract_plugin=extract_plugin,
     )
+
+
+@pytest.fixture
+def testing_env_valid(setup_valid: Generator) -> TestingEnvironment:
+    """Provide testing environment"""
+    return create_testing_env(setup_valid)
 
 
 @pytest.fixture
 def testing_env_corrupted(setup_corrupted: Generator) -> TestingEnvironment:
     """Provide testing environment"""
-    _ = setup_corrupted
-
-    regex = rf"{UUID4}_.*\.pdf"
-    all_files: bool = False
-    page_selection: str = ""
-    error_handling: str = RAISE_ON_ERROR
-    table_strategy: str = TABLE_LINES
-    custom_table_strategy: str = CUSTOM_TABLE_STRATEGY_DEFAULT
-    max_processes: int = MAX_PROCESSES_DEFAULT
-
-    extract_plugin = PdfExtract(
-        regex=regex,
-        all_files=all_files,
-        page_selection=page_selection,
-        error_handling=error_handling,
-        table_strategy=table_strategy,
-        custom_table_strategy=custom_table_strategy,
-        max_processes=max_processes,
-    )
-    return TestingEnvironment(
-        regex=regex,
-        extract_plugin=extract_plugin,
-    )
+    return create_testing_env(setup_corrupted)
 
 
 @pytest.fixture
 def testing_env_page_selection(setup_page_selection: Generator) -> TestingEnvironment:
     """Provide testing environment"""
-    _ = setup_page_selection
-
-    regex = rf"{UUID4}_.*\.pdf"
-    all_files: bool = False
-    page_selection: str = ""
-    error_handling: str = RAISE_ON_ERROR
-    table_strategy: str = TABLE_LINES
-    custom_table_strategy: str = CUSTOM_TABLE_STRATEGY_DEFAULT
-    max_processes: int = MAX_PROCESSES_DEFAULT
-
-    extract_plugin = PdfExtract(
-        regex=regex,
-        all_files=all_files,
-        page_selection=page_selection,
-        error_handling=error_handling,
-        table_strategy=table_strategy,
-        custom_table_strategy=custom_table_strategy,
-        max_processes=max_processes,
-    )
-    return TestingEnvironment(
-        regex=regex,
-        extract_plugin=extract_plugin,
-    )
+    return create_testing_env(setup_page_selection)
