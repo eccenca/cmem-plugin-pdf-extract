@@ -360,9 +360,7 @@ class PdfExtract(WorkflowPlugin):
             for entity in inputs[0].entities:
                 file = FileEntitySchema().from_entity(entity=entity)
                 mime = file.mime
-                if mime == "application/pdf" and re.fullmatch(
-                    self.regex, file.path
-                ):
+                if mime == "application/pdf" and re.fullmatch(self.regex, file.path):
                     filenames.append(file.path)
             if not filenames:
                 raise FileNotFoundError("No matching files found")
