@@ -53,6 +53,8 @@ def test_one_entity_per_file(testing_env_valid: TestingEnvironment) -> None:
     plugin = testing_env_valid.extract_plugin
     entities = plugin.execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
 
+    entities.entities = sorted(entities.entities, key=lambda x: x.uri)
+
     assert entities.schema.paths == [EntityPath("pdf_extract_output")]
     assert entities.entities[0].uri == f"{TYPE_URI}_1"
     assert entities.entities[1].uri == f"{TYPE_URI}_2"
