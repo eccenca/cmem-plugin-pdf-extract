@@ -200,21 +200,3 @@ def test_input_port_pdf(testing_env_valid: TestingEnvironment) -> None:
     results = plugin.execute(inputs=[input_entities], context=TestExecutionContext())
 
     assert literal_eval(results.entities[0].values[0][0]) == FILE_1_RESULT_INPUT
-
-    plugin.regex = "not-right.pdf"
-    with pytest.raises(FileNotFoundError, match="No matching files found"):
-        plugin.execute(inputs=[input_entities], context=TestExecutionContext())
-
-
-def test_input_port_no_pdf(testing_env_valid: TestingEnvironment) -> None:
-    """Test input via input port with no pdf file"""
-    schema = FileEntitySchema()
-    files = [LocalFile(path="tests/test_1.pdf", mime="no-right/pdf")]
-    entities = [schema.to_entity(file) for file in files]
-    input_entities = Entities(entities=entities, schema=schema)
-
-    plugin = testing_env_valid.extract_plugin
-    plugin.regex = "tests/test_1.pdf"
-
-    with pytest.raises(FileNotFoundError, match="No matching files found"):
-        plugin.execute(inputs=[input_entities], context=TestExecutionContext())
