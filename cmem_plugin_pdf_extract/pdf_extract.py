@@ -85,9 +85,11 @@ TYPE_URI = "urn:x-eccenca:PdfExtract"
             param_type=StringParameterType(),
             name="regex",
             label="File name regex filter",
-            description="Regular expression for filtering resources of the project. If there is an "
-            "input connected to this workflow, the regular expression will filter the "
-            "incoming entities of that input instead of the project resources.",
+            description="Regular expression for filtering resources of the project. If this "
+            "parameter is set, the input port will be closed and project "
+            "files will be compared against the regular expression.",
+            advanced=True,
+            default_value="",
         ),
         PluginParameter(
             param_type=BoolParameterType(),
@@ -189,7 +191,11 @@ class PdfExtract(WorkflowPlugin):
         self.regex = rf"{regex}"
         self.all_files = all_files
         self.max_processes = max_processes
-        self.input_ports = FixedNumberOfInputs([FixedSchemaPort(schema=FileEntitySchema())])
+        self.input_ports = (
+            FixedNumberOfInputs([FixedSchemaPort(schema=FileEntitySchema())])
+            if not self.regex
+            else FixedNumberOfInputs([])
+        )
         self.schema = EntitySchema(type_uri=TYPE_URI, paths=[EntityPath("pdf_extract_output")])
         self.output_port = FixedSchemaPort(self.schema)
 
@@ -361,11 +367,7 @@ class PdfExtract(WorkflowPlugin):
             filenames = []
             for entity in inputs[0].entities:
                 file = FileEntitySchema().from_entity(entity=entity)
-                mime = file.mime
-                if mime == "application/pdf" and re.fullmatch(self.regex, file.path):
-                    filenames.append(file.path)
-            if not filenames:
-                raise FileNotFoundError("No matching files found")
+                filenames.append(file.path)
             return self.get_entities(filenames, "Local")
 
         setup_cmempy_user_access(context.user)
