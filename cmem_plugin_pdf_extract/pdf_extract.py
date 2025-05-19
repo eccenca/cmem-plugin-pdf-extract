@@ -203,11 +203,15 @@ class PdfExtract(WorkflowPlugin):
         """Plugin Action to test the regex pattern against existing files"""
         setup_cmempy_user_access(context.user)
         files_found = self.get_file_list(context.project_id)
-        output = [f"{len(files_found)} file{'' if len(files_found) == 1 else 's'} found matching "
-                  f"the regular expression in the project files."]
+        output = [
+            f"{len(files_found)} file{'' if len(files_found) == 1 else 's'} found matching "
+            f"the regular expression in the project files."
+        ]
         output.extend(f"- {file}" for file in files_found)
-        output.append("\nThe preview does not show results from input ports as they are usually "
-                      "not available before the execution")
+        output.append(
+            "\nThe preview does not show results from input ports as they are usually "
+            "not available before the execution"
+        )
         return "\n".join(output)
 
     @staticmethod
@@ -217,12 +221,12 @@ class PdfExtract(WorkflowPlugin):
         project_id: str,
         table_settings: dict,
         error_handling: str,
-        file_type: str,
+        file_origin: str,
     ) -> dict:
         """Extract structured PDF data (sequential processing)."""
         output: dict = {"metadata": {"Filename": filename}, "pages": []}
         binary_file: str | BytesIO
-        if file_type == "Local":
+        if file_origin == "Workflow":
             binary_file = filename
         else:
             binary_file = BytesIO(get_resource(project_id, filename))
@@ -310,7 +314,7 @@ class PdfExtract(WorkflowPlugin):
             "tables": tables,
         }
 
-    def get_entities(self, filenames: list, filetype: str) -> Entities:
+    def get_entities(self, filenames: list, file_origin: str) -> Entities:
         """Make entities from extracted PDF data across multiple files."""
         entities = []
         all_output = []
@@ -324,7 +328,7 @@ class PdfExtract(WorkflowPlugin):
                     self.context.task.project_id(),
                     self.table_strategy,
                     self.error_handling,
-                    filetype,
+                    file_origin,
                 ): filename
                 for filename in filenames
             }
@@ -371,11 +375,11 @@ class PdfExtract(WorkflowPlugin):
             setup_cmempy_user_access(context.user)
             filenames = []
             for entity in inputs[0].entities:
-                #check for where path is and take it
+                # check for where path is and take it
 
                 file = FileEntitySchema().from_entity(entity=entity)
                 filenames.append(file.path)
-            return self.get_entities(filenames, "Local")
+            return self.get_entities(filenames, "Workflow")
 
         setup_cmempy_user_access(context.user)
         filenames = self.get_file_list(context.task.project_id())
