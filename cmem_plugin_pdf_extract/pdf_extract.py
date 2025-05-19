@@ -114,7 +114,7 @@ TYPE_URI = "urn:x-eccenca:PdfExtract"
         PluginParameter(
             param_type=BoolParameterType(),
             name="all_files",
-            label="Output all file content as one value",
+            label="Combine results from all files as one value",
             description="""If enabled, the results of all files will be combined into a single
             output value. If disabled, each file result will be output in a separate entity.""",
             default_value=False,
