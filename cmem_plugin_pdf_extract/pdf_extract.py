@@ -76,8 +76,8 @@ TYPE_URI = "urn:x-eccenca:PdfExtract"
     actions=[
         PluginAction(
             name="test_regex",
-            label="Test regex pattern",
-            description="Test the regular expression pattern for file identification.",
+            label="Preview files",
+            description="Preview all of the PDF files that have been found.",
         )
     ],
     parameters=[
@@ -202,8 +202,13 @@ class PdfExtract(WorkflowPlugin):
     def test_regex(self, context: PluginContext) -> str:
         """Plugin Action to test the regex pattern against existing files"""
         setup_cmempy_user_access(context.user)
-        files_found = len(self.get_file_list(context.project_id))
-        return f"{files_found} file{'' if files_found == 1 else 's'} found."
+        files_found = self.get_file_list(context.project_id)
+        output = [f"{len(files_found)} file{'' if len(files_found) == 1 else 's'} found matching "
+                  f"the regular expression in the project files."]
+        output.extend(f"- {file}" for file in files_found)
+        output.append("\nThe preview does not show results from input ports as they are usually "
+                      "not available before the execution")
+        return "\n".join(output)
 
     @staticmethod
     def extract_pdf_data_worker(  # noqa: PLR0913
@@ -366,6 +371,8 @@ class PdfExtract(WorkflowPlugin):
             setup_cmempy_user_access(context.user)
             filenames = []
             for entity in inputs[0].entities:
+                #check for where path is and take it
+
                 file = FileEntitySchema().from_entity(entity=entity)
                 filenames.append(file.path)
             return self.get_entities(filenames, "Local")
