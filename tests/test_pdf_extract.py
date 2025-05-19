@@ -182,7 +182,14 @@ def test_invalid_page_selection_format() -> None:
 def test_regex_plugin_action(testing_env_valid: TestingEnvironment) -> None:
     """Test plugin action"""
     result = testing_env_valid.extract_plugin.test_regex(TestPluginContext(PROJECT_ID))
-    assert result == "2 files found."
+    assert (
+        result
+        == """2 files found matching the regular expression in the project files.
+- c394802542bd4c9990cca50d3104e6a0_1.pdf
+- c394802542bd4c9990cca50d3104e6a0_2.pdf
+
+The preview does not show results from input ports as they are usually not available before the execution"""  # noqa: E501
+    )
 
 
 def test_input_port_pdf(testing_env_valid: TestingEnvironment) -> None:
