@@ -45,11 +45,15 @@ from cmem_plugin_pdf_extract.utils import (
 MAX_PROCESSES_DEFAULT = cpu_count() - 1  # type: ignore[operator]
 TABLE_LINES = "lines"
 TABLE_TEXT = "text"
+TABLE_LATTICE = "lattice"
+TABLE_SPARSE = "sparse"
 TABLE_CUSTOM = "custom"
 TABLE_STRATEGY_PARAMETER_CHOICES = OrderedDict(
     {
         TABLE_LINES: "Lines",
         TABLE_TEXT: "Text",
+        TABLE_LATTICE: "Lattice",
+        TABLE_SPARSE: "Sparse",
         TABLE_CUSTOM: "Custom",
     }
 )
