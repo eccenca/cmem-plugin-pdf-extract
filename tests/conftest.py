@@ -11,13 +11,16 @@ import pytest
 from cmem.cmempy.workspace.projects.project import delete_project, make_new_project
 from cmem.cmempy.workspace.projects.resources.resource import create_resource
 
+from cmem_plugin_pdf_extract.extraction_strategies.table_extraction_strategies import (
+    CUSTOM_TABLE_STRATEGY_DEFAULT,
+)
 from cmem_plugin_pdf_extract.pdf_extract import (
     MAX_PROCESSES_DEFAULT,
     RAISE_ON_ERROR,
     TABLE_LINES,
+    TEXT_DEFAULT,
     PdfExtract,
 )
-from cmem_plugin_pdf_extract.table_extraction_strategies import CUSTOM_TABLE_STRATEGY_DEFAULT
 from tests.results import UUID4
 
 from . import __path__
@@ -129,6 +132,7 @@ def create_testing_env(generator: Generator) -> TestingEnvironment:
         page_selection="",
         error_handling=RAISE_ON_ERROR,
         table_strategy=TABLE_LINES,
+        text_strategy=TEXT_DEFAULT,
         custom_table_strategy=CUSTOM_TABLE_STRATEGY_DEFAULT,
         max_processes=MAX_PROCESSES_DEFAULT,
     )

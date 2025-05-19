@@ -11,8 +11,10 @@ from cmem_plugin_base.dataintegration.typed_entities.file import FileEntitySchem
 from pdfplumber.utils.exceptions import PdfminerException
 from yaml import YAMLError, safe_load
 
+from cmem_plugin_pdf_extract.extraction_strategies.table_extraction_strategies import (
+    TABLE_EXTRACTION_STRATEGIES,
+)
 from cmem_plugin_pdf_extract.pdf_extract import PdfExtract
-from cmem_plugin_pdf_extract.table_extraction_strategies import TABLE_EXTRACTION_STRATEGIES
 from cmem_plugin_pdf_extract.utils import parse_page_selection
 from tests.results import (
     CUSTOM_TABLE_STRATEGY_SETTING,

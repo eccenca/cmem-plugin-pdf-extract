@@ -32,9 +32,12 @@ from pdfplumber.page import Page
 from yaml import YAMLError, safe_load
 
 from cmem_plugin_pdf_extract.doc import DOC
-from cmem_plugin_pdf_extract.table_extraction_strategies import (
+from cmem_plugin_pdf_extract.extraction_strategies.table_extraction_strategies import (
     CUSTOM_TABLE_STRATEGY_DEFAULT,
     TABLE_EXTRACTION_STRATEGIES,
+)
+from cmem_plugin_pdf_extract.extraction_strategies.text_extraction_strategies import (
+    TEXT_EXTRACTION_STRATEGIES,
 )
 from cmem_plugin_pdf_extract.utils import (
     capture_pdfminer_logs,
@@ -55,6 +58,19 @@ TABLE_STRATEGY_PARAMETER_CHOICES = OrderedDict(
         TABLE_LATTICE: "Lattice",
         TABLE_SPARSE: "Sparse",
         TABLE_CUSTOM: "Custom",
+    }
+)
+
+TEXT_DEFAULT = "default"
+TEXT_RAW = "raw"
+TEXT_SCANNED = "scanned"
+TEXT_LAYOUT = "layout"
+TEXT_STRATEGY_PARAMETER_CHOICES = OrderedDict(
+    {
+        TEXT_DEFAULT: "Default",
+        TEXT_RAW: "Raw",
+        TEXT_SCANNED: "Scanned",
+        TEXT_LAYOUT: "Layout",
     }
 )
 
@@ -125,6 +141,15 @@ TYPE_URI = "urn:x-eccenca:PdfExtract"
             default_value=RAISE_ON_ERROR,
         ),
         PluginParameter(
+            param_type=ChoiceParameterType(TEXT_STRATEGY_PARAMETER_CHOICES),
+            name="text_strategy",
+            label="Text extraction strategy",
+            description="""
+            TBD
+            """,
+            default_value=TEXT_DEFAULT,
+        ),
+        PluginParameter(
             param_type=ChoiceParameterType(TABLE_STRATEGY_PARAMETER_CHOICES),
             name="table_strategy",
             label="Table extraction strategy",
@@ -162,6 +187,7 @@ class PdfExtract(WorkflowPlugin):
         page_selection: str = "",
         error_handling: str = RAISE_ON_ERROR,
         table_strategy: str = TABLE_LINES,
+        text_strategy: str = TEXT_DEFAULT,
         custom_table_strategy: str = CUSTOM_TABLE_STRATEGY_DEFAULT,
         max_processes: int = MAX_PROCESSES_DEFAULT,
     ) -> None:
@@ -187,6 +213,10 @@ class PdfExtract(WorkflowPlugin):
                 raise YAMLError(f"Invalid custom table strategy: {e}") from e
         else:
             self.table_strategy = TABLE_EXTRACTION_STRATEGIES[table_strategy]
+
+        if text_strategy not in TEXT_STRATEGY_PARAMETER_CHOICES:
+            raise ValueError(f"Invalid text strategy: {text_strategy}")
+        self.text_strategy = TEXT_EXTRACTION_STRATEGIES[text_strategy]
 
         if error_handling not in ERROR_HANDLING_PARAMETER_CHOICES:
             raise ValueError(f"Invalid error handling mode: {error_handling}")
@@ -224,6 +254,7 @@ class PdfExtract(WorkflowPlugin):
         page_numbers: list,
         project_id: str,
         table_settings: dict,
+        text_settings: dict,
         error_handling: str,
         file_origin: str,
     ) -> dict:
@@ -247,7 +278,11 @@ class PdfExtract(WorkflowPlugin):
                 for page_number in valid_page_numbers:
                     try:
                         page_data = PdfExtract.process_page(
-                            pdf.pages[page_number - 1], page_number, table_settings, error_handling
+                            pdf.pages[page_number - 1],
+                            page_number,
+                            table_settings,
+                            text_settings,
+                            error_handling,
                         )
                         output["pages"].append(page_data)
                     except Exception as e:
@@ -272,7 +307,7 @@ class PdfExtract(WorkflowPlugin):
 
     @staticmethod
     def process_page(
-        page: Page, page_number: int, table_settings: dict, error_handling: str
+        page: Page, page_number: int, table_settings: dict, text_settings: dict, error_handling: str
     ) -> dict:
         """Process a single PDF page and return extracted content."""
         text_warning = None
@@ -280,7 +315,7 @@ class PdfExtract(WorkflowPlugin):
         stderr_warning = None
         try:
             with capture_pdfminer_logs() as stderr:
-                text = page.extract_text() or ""
+                text = page.extract_text(**text_settings) or ""
             stderr_output = stderr.getvalue().strip()
             if not text and stderr_output:
                 text_warning = f"Text extraction error: {stderr_output}"
@@ -331,6 +366,7 @@ class PdfExtract(WorkflowPlugin):
                     self.page_numbers,
                     self.context.task.project_id(),
                     self.table_strategy,
+                    self.text_strategy,
                     self.error_handling,
                     file_origin,
                 ): filename
