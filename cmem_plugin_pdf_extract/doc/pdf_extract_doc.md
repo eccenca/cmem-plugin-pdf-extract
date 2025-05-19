@@ -82,7 +82,9 @@ Specifies how errors during PDF extraction should be handled.
 
 **<a id="parameter_doc_table_strategy">Table extraction strategy</a>**
 
-Method used to detect tables in PDF pages. Available strategies include:  
+Method used to detect tables in PDF pages. For further explanation click [here](https://github.com/jsvine/pdfplumber/blob/stable/README.md#extracting-tables).
+
+Available strategies include:  
 - *lines*: Uses detected lines in the PDF layout to find table boundaries.  
 - *text*: Relies on text alignment and spacing.
 - *lattice*: Best for machine-generated perfect grids.
@@ -94,7 +96,10 @@ Method used to detect tables in PDF pages. Available strategies include:
 Defines a custom table extraction strategy using YAML syntax. Only used if "custom" is selected as the table strategy.
 
 **<a id="parameter_doc_text_strategy">Text extraction strategy</a>**
-Method used to extract text in PDF pages. Avaiable strategies include:
+
+Method used to extract text in PDF pages. For further explanation click [here](https://github.com/jsvine/pdfplumber/blob/stable/README.md#extracting-text). 
+
+Available strategies include:
 - *default*: Balanced for most digital PDFs.
 - *raw*: Extract the PDFs with no merging of text fragments.
 - *scanned*: Best for scanned PDFs as it merges text more agressively.
