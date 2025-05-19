@@ -144,9 +144,9 @@ TYPE_URI = "urn:x-eccenca:PdfExtract"
             param_type=ChoiceParameterType(TEXT_STRATEGY_PARAMETER_CHOICES),
             name="text_strategy",
             label="Text extraction strategy",
-            description="""
-            TBD
-            """,
+            description="""Specifies how text is extracted from a PDF page.
+            Options include "raw", "layout", and others, each interpreting character positions and
+            formatting differently to control how text is grouped and ordered.""",
             default_value=TEXT_DEFAULT,
         ),
         PluginParameter(
