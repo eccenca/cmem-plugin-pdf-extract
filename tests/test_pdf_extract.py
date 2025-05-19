@@ -14,7 +14,9 @@ from yaml import YAMLError, safe_load
 from cmem_plugin_pdf_extract.extraction_strategies.table_extraction_strategies import (
     TABLE_EXTRACTION_STRATEGIES,
 )
-from cmem_plugin_pdf_extract.extraction_strategies.text_extraction_strategies import TEXT_EXTRACTION_STRATEGIES
+from cmem_plugin_pdf_extract.extraction_strategies.text_extraction_strategies import (
+    TEXT_EXTRACTION_STRATEGIES,
+)
 from cmem_plugin_pdf_extract.pdf_extract import PdfExtract
 from cmem_plugin_pdf_extract.utils import parse_page_selection
 from tests.results import (
@@ -208,6 +210,7 @@ def test_input_port_pdf(testing_env_valid: TestingEnvironment) -> None:
     results = plugin.execute(inputs=[input_entities], context=TestExecutionContext())
 
     assert literal_eval(results.entities[0].values[0][0]) == FILE_1_RESULT_INPUT
+
 
 def test_text_extraction_strategies(testing_env_valid: TestingEnvironment) -> None:
     """Test all combinations of text- and table-strategies"""
