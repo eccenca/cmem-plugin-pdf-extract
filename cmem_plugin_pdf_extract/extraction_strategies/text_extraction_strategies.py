@@ -17,13 +17,6 @@ DEFAULT_TEXT_EXTRACTION = {
     "y_density": 13,  # Characters per inch (vertical)
     # Layout Control
     "layout": False,  # Disable advanced layout analysis
-    # "layout_bbox": None,  # No bounding box restriction  # noqa: ERA001
-    "layout_width": None,
-    "layout_height": None,
-    "layout_x0": None,
-    "layout_x1": None,
-    "layout_y0": None,
-    "layout_y1": None,
     # Text Handling
     "keep_blank_chars": False,  # Discard empty chars
     "use_text_flow": False,  # Physical text order
@@ -46,13 +39,6 @@ SCANNED_TEXT_EXTRACTION = {
     "y_density": 13,
     # Layout Control (Same as default)
     "layout": False,
-    "layout_bbox": None,
-    "layout_width": None,
-    "layout_height": None,
-    "layout_x0": None,
-    "layout_x1": None,
-    "layout_y0": None,
-    "layout_y1": None,
     # Text Handling
     "keep_blank_chars": True,  # Preserve whitespace
     "use_text_flow": False,  # Physical order
@@ -75,13 +61,6 @@ LAYOUT_AWARE_EXTRACTION = {
     "y_density": 13,
     # Layout Control (Enabled)
     "layout": True,  # Enable layout analysis
-    "layout_bbox": None,
-    "layout_width": None,
-    "layout_height": None,
-    "layout_x0": None,
-    "layout_x1": None,
-    "layout_y0": None,
-    "layout_y1": None,
     # Text Handling
     "keep_blank_chars": False,
     "use_text_flow": True,  # Logical reading order
@@ -104,13 +83,6 @@ RAW_TEXT_EXTRACTION = {
     "y_density": 13,
     # Layout Control (Same as default)
     "layout": False,
-    "layout_bbox": None,
-    "layout_width": None,
-    "layout_height": None,
-    "layout_x0": None,
-    "layout_x1": None,
-    "layout_y0": None,
-    "layout_y1": None,
     # Text Handling
     "keep_blank_chars": True,  # Keep all whitespace
     "use_text_flow": False,  # Physical order
