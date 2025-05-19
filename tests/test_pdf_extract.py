@@ -14,6 +14,7 @@ from yaml import YAMLError, safe_load
 from cmem_plugin_pdf_extract.extraction_strategies.table_extraction_strategies import (
     TABLE_EXTRACTION_STRATEGIES,
 )
+from cmem_plugin_pdf_extract.extraction_strategies.text_extraction_strategies import TEXT_EXTRACTION_STRATEGIES
 from cmem_plugin_pdf_extract.pdf_extract import PdfExtract
 from cmem_plugin_pdf_extract.utils import parse_page_selection
 from tests.results import (
@@ -207,3 +208,24 @@ def test_input_port_pdf(testing_env_valid: TestingEnvironment) -> None:
     results = plugin.execute(inputs=[input_entities], context=TestExecutionContext())
 
     assert literal_eval(results.entities[0].values[0][0]) == FILE_1_RESULT_INPUT
+
+def test_text_extraction_strategies(testing_env_valid: TestingEnvironment) -> None:
+    """Test all combinations of text- and table-strategies"""
+    text_strategies = ["default", "raw", "layout", "scanned"]
+    table_strategies = ["lines", "sparse", "lattice", "text"]
+
+    plugin = testing_env_valid.extract_plugin
+
+    for text_strategy in text_strategies:
+        for table_strategy in table_strategies:
+            plugin.table_strategy = TABLE_EXTRACTION_STRATEGIES[table_strategy]
+            plugin.text_strategy = TEXT_EXTRACTION_STRATEGIES[text_strategy]
+            result = plugin.execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
+            assert len(list(result.entities)) > 0
+
+
+def test_wrong_text_extraction() -> None:
+    """Test invalid text strategy"""
+    wrong_text_strategy = "wrong"
+    with pytest.raises(ValueError, match=f"Invalid text strategy: {wrong_text_strategy}"):
+        PdfExtract(regex="test", text_strategy=wrong_text_strategy)
