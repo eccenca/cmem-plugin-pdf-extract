@@ -92,7 +92,7 @@ TYPE_URI = "urn:x-eccenca:PdfExtract"
     label="Extract from PDF files",
     description="Extract text and tables from PDF files",
     documentation=DOC,
-    icon=Icon(package=__package__, file_name="pdf_extract.svg"),
+    icon=Icon(package=__package__, file_name="pdf-extract.svg"),
     actions=[
         PluginAction(
             name="test_regex",
