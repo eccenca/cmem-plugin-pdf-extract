@@ -235,13 +235,15 @@ class PdfExtract(WorkflowPlugin):
 
     def test_regex(self, context: PluginContext) -> str:
         """Plugin Action to test the regex pattern against existing files"""
-        setup_cmempy_user_access(context.user)
-        files_found = self.get_file_list(context.project_id)
-        output = [
-            f"{len(files_found)} file{'' if len(files_found) == 1 else 's'} found matching "
-            f"the regular expression in the project files."
-        ]
-        output.extend(f"- {file}" for file in files_found)
+        output = ["No regular expression was given!"]
+        if self.regex != "":
+            setup_cmempy_user_access(context.user)
+            files_found = self.get_file_list(context.project_id)
+            output = [
+                f"{len(files_found)} file{'' if len(files_found) == 1 else 's'} found matching "
+                f"the regular expression in the project files."
+            ]
+            output.extend(f"- {file}" for file in files_found)
         output.append(
             "\nThe preview does not show results from input ports as they are usually "
             "not available before the execution"
@@ -415,8 +417,6 @@ class PdfExtract(WorkflowPlugin):
             setup_cmempy_user_access(context.user)
             filenames = []
             for entity in inputs[0].entities:
-                # check for where path is and take it
-
                 file = FileEntitySchema().from_entity(entity=entity)
                 filenames.append(file.path)
             return self.get_entities(filenames, "Workflow")
