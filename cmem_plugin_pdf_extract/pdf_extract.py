@@ -6,7 +6,9 @@ from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from io import BytesIO
 from os import cpu_count
+from typing import Any
 
+import yaml
 from cmem.cmempy.workspace.projects.resources import get_resources
 from cmem.cmempy.workspace.projects.resources.resource import get_resource
 from cmem_plugin_base.dataintegration.context import (
@@ -33,10 +35,11 @@ from yaml import YAMLError, safe_load
 
 from cmem_plugin_pdf_extract.doc import DOC
 from cmem_plugin_pdf_extract.extraction_strategies.table_extraction_strategies import (
-    CUSTOM_TABLE_STRATEGY_DEFAULT,
+    LINES_STRATEGY,
     TABLE_EXTRACTION_STRATEGIES,
 )
 from cmem_plugin_pdf_extract.extraction_strategies.text_extraction_strategies import (
+    DEFAULT_TEXT_EXTRACTION,
     TEXT_EXTRACTION_STRATEGIES,
 )
 from cmem_plugin_pdf_extract.utils import (
@@ -65,12 +68,14 @@ TEXT_DEFAULT = "default"
 TEXT_RAW = "raw"
 TEXT_SCANNED = "scanned"
 TEXT_LAYOUT = "layout"
+TEXT_CUSTOM = "custom"
 TEXT_STRATEGY_PARAMETER_CHOICES = OrderedDict(
     {
         TEXT_DEFAULT: "Default",
         TEXT_RAW: "Raw",
         TEXT_SCANNED: "Scanned",
         TEXT_LAYOUT: "Layout",
+        TEXT_CUSTOM: "Custom",
     }
 )
 
@@ -161,6 +166,12 @@ TYPE_URI = "urn:x-eccenca:PdfExtract"
         ),
         PluginParameter(
             param_type=MultilineStringParameterType(),
+            name="custom_text_strategy",
+            description="Custom text extraction strategy in YAML format.",
+            advanced=True,
+        ),
+        PluginParameter(
+            param_type=MultilineStringParameterType(),
             name="custom_table_strategy",
             label="Custom table extraction strategy",
             description="Custom table extraction strategy in YAML format.",
@@ -188,13 +199,61 @@ class PdfExtract(WorkflowPlugin):
         error_handling: str = RAISE_ON_ERROR,
         table_strategy: str = TABLE_LINES,
         text_strategy: str = TEXT_DEFAULT,
-        custom_table_strategy: str = CUSTOM_TABLE_STRATEGY_DEFAULT,
+        custom_table_strategy: str = "\n".join(
+            f"# {_}" for _ in yaml.dump(LINES_STRATEGY).strip().splitlines()
+        ),
+        custom_text_strategy: str = "\n".join(
+            f"# {_}" for _ in yaml.dump(DEFAULT_TEXT_EXTRACTION).strip().splitlines()
+        ),
         max_processes: int = MAX_PROCESSES_DEFAULT,
     ) -> None:
         if page_selection:
             validate_page_selection(page_selection)
         self.page_numbers = parse_page_selection(page_selection)
+        self.table_strategy: dict[Any, Any]
+        self.set_table_strategy(custom_table_strategy, table_strategy)
 
+        self.text_strategy: dict[Any, Any]
+        self.set_text_strategy(custom_text_strategy, text_strategy)
+
+        if error_handling not in ERROR_HANDLING_PARAMETER_CHOICES:
+            raise ValueError(f"Invalid error handling mode: {error_handling}")
+        self.error_handling = error_handling
+
+        self.regex = rf"{regex}"
+        self.all_files = all_files
+        self.max_processes = max_processes
+        self.schema = EntitySchema(type_uri=TYPE_URI, paths=[EntityPath("pdf_extract_output")])
+        self.input_ports = (
+            FixedNumberOfInputs([FixedSchemaPort(schema=FileEntitySchema())])
+            if not self.regex
+            else FixedNumberOfInputs([])
+        )
+        self.output_port = FixedSchemaPort(self.schema)
+
+    def set_text_strategy(self, custom_text_strategy: str, text_strategy: str) -> None:
+        """Set text strategy to be used in extraction"""
+        if text_strategy not in TEXT_STRATEGY_PARAMETER_CHOICES:
+            raise ValueError(f"Invalid text strategy: {text_strategy}")
+        if text_strategy == TEXT_CUSTOM:
+            cleaned_string = "\n".join(
+                [
+                    line
+                    for line in custom_text_strategy.splitlines()
+                    if not line.strip().startswith("#") and line.strip() != ""
+                ]
+            ).strip()
+            if not cleaned_string:
+                raise ValueError("No custom text strategy defined")
+            try:
+                self.text_strategy = safe_load(cleaned_string)
+            except YAMLError as e:
+                raise YAMLError(f"Invalid custom text strategy: {e}") from e
+        else:
+            self.text_strategy = TEXT_EXTRACTION_STRATEGIES[text_strategy]
+
+    def set_table_strategy(self, custom_table_strategy: str, table_strategy: str) -> None:
+        """Set table strategy to be used in extraction"""
         if table_strategy not in TABLE_STRATEGY_PARAMETER_CHOICES:
             raise ValueError(f"Invalid table strategy: {table_strategy}")
         if table_strategy == TABLE_CUSTOM:
@@ -213,25 +272,6 @@ class PdfExtract(WorkflowPlugin):
                 raise YAMLError(f"Invalid custom table strategy: {e}") from e
         else:
             self.table_strategy = TABLE_EXTRACTION_STRATEGIES[table_strategy]
-
-        if text_strategy not in TEXT_STRATEGY_PARAMETER_CHOICES:
-            raise ValueError(f"Invalid text strategy: {text_strategy}")
-        self.text_strategy = TEXT_EXTRACTION_STRATEGIES[text_strategy]
-
-        if error_handling not in ERROR_HANDLING_PARAMETER_CHOICES:
-            raise ValueError(f"Invalid error handling mode: {error_handling}")
-        self.error_handling = error_handling
-
-        self.regex = rf"{regex}"
-        self.all_files = all_files
-        self.max_processes = max_processes
-        self.input_ports = (
-            FixedNumberOfInputs([FixedSchemaPort(schema=FileEntitySchema())])
-            if not self.regex
-            else FixedNumberOfInputs([])
-        )
-        self.schema = EntitySchema(type_uri=TYPE_URI, paths=[EntityPath("pdf_extract_output")])
-        self.output_port = FixedSchemaPort(self.schema)
 
     def test_regex(self, context: PluginContext) -> str:
         """Plugin Action to test the regex pattern against existing files"""
