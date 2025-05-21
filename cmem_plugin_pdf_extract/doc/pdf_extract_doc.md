@@ -3,7 +3,7 @@ A task to extract text and tables from PDF files.
 ## Output format
 
 The output is a JSON string on the path `pdf_extract_output`. The format depends on the
-["Output results of all files in one value"](#parameter_doc_all_files) parameter.
+["Combine the results from all files into a single value"](#parameter_doc_all_files) parameter.
 
 ### if False:
 
@@ -69,7 +69,7 @@ Regular expression used to filter the resources of the project to be processed. 
 Comma-separated page numbers or ranges (e.g., 1,2-5,7) for page selection. Files that do not contain any of the specified pages will return
 empty results with the information logged. If no page selection is specified, all pages will be processed.
 
-**<a id="parameter_doc_all_files">Combine results from all files as one value</a>**
+**<a id="parameter_doc_all_files">Combine the results from all files into a single value</a>**
 
 If enabled, the results of all files will be combined into a single output value. If disabled, each file result will be output in a separate entity.
 
