@@ -303,7 +303,7 @@ class PdfExtract(WorkflowPlugin):
         """Extract structured PDF data (sequential processing)."""
         output: dict = {"metadata": {"Filename": filename}, "pages": []}
         binary_file: str | BytesIO
-        if file_origin == "Workflow":
+        if file_origin == "Local":
             binary_file = filename
         else:
             binary_file = BytesIO(get_resource(project_id, filename))
@@ -456,10 +456,12 @@ class PdfExtract(WorkflowPlugin):
         if len(inputs) != 0:
             setup_cmempy_user_access(context.user)
             filenames = []
+            filetype = ""
             for entity in inputs[0].entities:
                 file = FileEntitySchema().from_entity(entity=entity)
                 filenames.append(file.path)
-            return self.get_entities(filenames, "Workflow")
+                filetype = file.file_type
+            return self.get_entities(filenames, filetype)
 
         setup_cmempy_user_access(context.user)
         filenames = self.get_file_list(context.task.project_id())
