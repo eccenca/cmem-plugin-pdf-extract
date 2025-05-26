@@ -254,4 +254,6 @@ def test_input_project_file(testing_env_valid: TestingEnvironment) -> None:
     input_entities = Entities(entities=entities, schema=schema)
 
     plugin = testing_env_valid.extract_plugin
-    plugin.execute(inputs=[input_entities], context=TestExecutionContext(PROJECT_ID))
+    results = plugin.execute(inputs=[input_entities], context=TestExecutionContext(PROJECT_ID))
+
+    assert len(list(results.entities)) == 1
