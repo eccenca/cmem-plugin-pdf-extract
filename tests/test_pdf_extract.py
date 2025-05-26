@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 from cmem_plugin_base.dataintegration.entity import Entities, EntityPath
-from cmem_plugin_base.dataintegration.typed_entities.file import FileEntitySchema, LocalFile
+from cmem_plugin_base.dataintegration.typed_entities.file import File, FileEntitySchema, LocalFile
 from pdfplumber.utils.exceptions import PdfminerException
 from yaml import YAMLError, safe_load
 
@@ -232,3 +232,15 @@ def test_wrong_text_extraction() -> None:
     wrong_text_strategy = "wrong"
     with pytest.raises(ValueError, match=f"Invalid text strategy: {wrong_text_strategy}"):
         PdfExtract(regex="test", text_strategy=wrong_text_strategy)
+
+
+def test_wrong_file_type(testing_env_valid: TestingEnvironment) -> None:
+    """Test for wrong filetype of the FileEntitySchema"""
+    schema = FileEntitySchema()
+    files = [File(path="tests/test_1.pdf", file_type="unsupported", mime="application/pdf")]
+    entities = [schema.to_entity(file) for file in files]
+    input_entities = Entities(entities=entities, schema=schema)
+
+    plugin = testing_env_valid.extract_plugin
+    with pytest.raises(ValueError, match=r"^File 'tests/test_1.pdf' has unexpected type"):
+        plugin.execute(inputs=[input_entities], context=TestExecutionContext())
