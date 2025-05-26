@@ -244,3 +244,14 @@ def test_wrong_file_type(testing_env_valid: TestingEnvironment) -> None:
     plugin = testing_env_valid.extract_plugin
     with pytest.raises(ValueError, match=r"^File 'tests/test_1.pdf' has unexpected type"):
         plugin.execute(inputs=[input_entities], context=TestExecutionContext())
+
+
+def test_input_project_file(testing_env_valid: TestingEnvironment) -> None:
+    """Test execution with Project type files as input"""
+    schema = FileEntitySchema()
+    files = [File(path=f"{UUID4}_1.pdf", file_type="Project", mime="application/pdf")]
+    entities = [schema.to_entity(file) for file in files]
+    input_entities = Entities(entities=entities, schema=schema)
+
+    plugin = testing_env_valid.extract_plugin
+    plugin.execute(inputs=[input_entities], context=TestExecutionContext(PROJECT_ID))
