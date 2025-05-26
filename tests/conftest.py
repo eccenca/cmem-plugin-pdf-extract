@@ -122,6 +122,8 @@ def setup_page_selection() -> Generator:
 class TestingEnvironment:
     """Testing Environment"""
 
+    __test__ = False
+
     regex: str
     extract_plugin: PdfExtract
 
