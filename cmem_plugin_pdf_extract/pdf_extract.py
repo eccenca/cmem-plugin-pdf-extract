@@ -397,7 +397,7 @@ class PdfExtract(WorkflowPlugin):
 
     def get_entities(self, filenames: list, file_origins: list) -> Entities:
         """Make entities from extracted PDF data across multiple files."""
-        entities = []
+        entities: list[Entity] = []
         all_output = []
 
         with ProcessPoolExecutor(max_workers=self.max_processes) as executor:
@@ -412,7 +412,7 @@ class PdfExtract(WorkflowPlugin):
                     self.error_handling,
                     file_origin,
                 ): filename
-                for filename, file_origin in zip(filenames, file_origins)
+                for filename, file_origin in zip(filenames, file_origins, strict=True)
             }
 
             for i, future in enumerate(as_completed(future_to_file), start=1):
@@ -470,6 +470,7 @@ class PdfExtract(WorkflowPlugin):
 
         setup_cmempy_user_access(context.user)
         filenames = self.get_file_list(context.task.project_id())
+        filetype = ["Project" for _ in self.get_file_list(context.task.project_id())]
         if not filenames:
             raise FileNotFoundError("No matching files found")
-        return self.get_entities(filenames, "Project")
+        return self.get_entities(filenames, filetype)

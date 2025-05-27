@@ -263,6 +263,7 @@ def test_input_project_file(testing_env_valid: TestingEnvironment) -> None:
 
     assert len(list(results.entities)) == 1
 
+
 def test_different_file_type_inputs(testing_env_valid: TestingEnvironment) -> None:
     """Test execution with inputs from different file types: Project and Local"""
     schema = FileEntitySchema()
@@ -276,4 +277,4 @@ def test_different_file_type_inputs(testing_env_valid: TestingEnvironment) -> No
 
     plugin = testing_env_valid.extract_plugin
     result = plugin.execute(inputs=[input_entities], context=TestExecutionContext(PROJECT_ID))
-    assert len(list(result.entities)) == 2
+    assert len(list(result.entities)) == len(files)
