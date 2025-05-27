@@ -1,10 +1,9 @@
 """Extract text from PDF files"""
-import concurrent
+
 import re
 from collections import OrderedDict
 from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from concurrent.futures.thread import ThreadPoolExecutor
 from io import BytesIO
 from os import cpu_count
 from typing import Any
