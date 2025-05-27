@@ -1,9 +1,10 @@
 """Extract text from PDF files"""
-
+import concurrent
 import re
 from collections import OrderedDict
 from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures.thread import ThreadPoolExecutor
 from io import BytesIO
 from os import cpu_count
 from typing import Any
@@ -441,6 +442,13 @@ class PdfExtract(WorkflowPlugin):
                         operation_desc=f"file{'' if i == 1 else 's'} processed",
                     )
                 )
+
+        self.context.report.update(
+            ExecutionReport(
+                entity_count=len(entities),
+                operation_desc=f"file{'' if len(entities) == 1 else 's'} processed",
+            )
+        )
 
         if self.all_files:
             entities = [Entity(uri=f"{TYPE_URI}_1", values=[[str(all_output)]])]
