@@ -7,7 +7,12 @@ from typing import Any
 
 import pytest
 from cmem_plugin_base.dataintegration.entity import Entities, EntityPath
-from cmem_plugin_base.dataintegration.typed_entities.file import File, FileEntitySchema, LocalFile
+from cmem_plugin_base.dataintegration.typed_entities.file import (
+    File,
+    FileEntitySchema,
+    LocalFile,
+    ProjectFile,
+)
 from pdfplumber.utils.exceptions import PdfminerException
 from yaml import YAMLError, safe_load
 
@@ -257,3 +262,18 @@ def test_input_project_file(testing_env_valid: TestingEnvironment) -> None:
     results = plugin.execute(inputs=[input_entities], context=TestExecutionContext(PROJECT_ID))
 
     assert len(list(results.entities)) == 1
+
+def test_different_file_type_inputs(testing_env_valid: TestingEnvironment) -> None:
+    """Test execution with inputs from different file types: Project and Local"""
+    schema = FileEntitySchema()
+    files = []
+    file_project = ProjectFile(path=f"{UUID4}_1.pdf", mime="application/pdf")
+    file_local = LocalFile(path="tests/test_1.pdf", mime="application/pdf")
+    files.append(file_project)
+    files.append(file_local)
+    entities = [schema.to_entity(file) for file in files]
+    input_entities = Entities(entities=entities, schema=schema)
+
+    plugin = testing_env_valid.extract_plugin
+    result = plugin.execute(inputs=[input_entities], context=TestExecutionContext(PROJECT_ID))
+    assert len(list(result.entities)) == 2
