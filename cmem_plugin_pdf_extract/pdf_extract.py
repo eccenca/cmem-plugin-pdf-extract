@@ -395,7 +395,7 @@ class PdfExtract(WorkflowPlugin):
             "tables": tables,
         }
 
-    def get_entities(self, filenames: list, file_origin: str) -> Entities:
+    def get_entities(self, filenames: list, file_origins: list) -> Entities:
         """Make entities from extracted PDF data across multiple files."""
         entities = []
         all_output = []
@@ -412,11 +412,16 @@ class PdfExtract(WorkflowPlugin):
                     self.error_handling,
                     file_origin,
                 ): filename
-                for filename in filenames
+                for filename, file_origin in zip(filenames, file_origins)
             }
 
             for i, future in enumerate(as_completed(future_to_file), start=1):
                 filename = future_to_file[future]
+                try:
+                    if self.context.workflow.status() == "Canceling":
+                        return Entities(entities=entities, schema=self.schema)
+                except AttributeError:
+                    pass
                 try:
                     result = future.result()
                 except Exception as e:
@@ -456,12 +461,12 @@ class PdfExtract(WorkflowPlugin):
         if len(inputs) != 0:
             setup_cmempy_user_access(context.user)
             filenames = []
-            filetype = ""
+            filetypes = []
             for entity in inputs[0].entities:
                 file = FileEntitySchema().from_entity(entity=entity)
                 filenames.append(file.path)
-                filetype = file.file_type
-            return self.get_entities(filenames, filetype)
+                filetypes.append(file.file_type)
+            return self.get_entities(filenames, filetypes)
 
         setup_cmempy_user_access(context.user)
         filenames = self.get_file_list(context.task.project_id())
