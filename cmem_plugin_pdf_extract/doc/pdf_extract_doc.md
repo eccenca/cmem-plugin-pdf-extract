@@ -5,9 +5,8 @@ A task to extract text and tables from PDF files.
 The output is a JSON string on the path `pdf_extract_output`. The format depends on the
 ["Combine the results from all files into a single value"](#parameter_doc_all_files) parameter.
 
-### if False:
 
-Outputs one entity per file:
+### Output one entity per file:
 
 ```
 {
@@ -33,8 +32,8 @@ Outputs one entity per file:
 }
 ```
 
-### if True:
-Outputs one entity for all files:
+
+### Output one entity for all files:
 
 ```
 [
