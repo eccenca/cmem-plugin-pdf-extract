@@ -6,7 +6,7 @@ The output is a JSON string on the path `pdf_extract_output`. The format depends
 ["Combine the results from all files into a single value"](#parameter_doc_all_files) parameter.
 
 
-### Output one entity per file
+### Output one entity/value per file
 
 ```
 {
@@ -33,7 +33,7 @@ The output is a JSON string on the path `pdf_extract_output`. The format depends
 ```
 
 
-### Output one entity for all files
+### Output one entity/value for all files
 
 ```
 [
