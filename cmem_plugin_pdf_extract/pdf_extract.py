@@ -3,7 +3,7 @@
 import re
 from collections import OrderedDict
 from collections.abc import Sequence
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import BytesIO
 from os import cpu_count
 from typing import Any
@@ -400,7 +400,7 @@ class PdfExtract(WorkflowPlugin):
         entities: list[Entity] = []
         all_output = []
 
-        with ProcessPoolExecutor(max_workers=self.max_processes) as executor:
+        with ThreadPoolExecutor(max_workers=self.max_processes) as executor:
             future_to_file = {
                 executor.submit(
                     PdfExtract.extract_pdf_data_worker,
