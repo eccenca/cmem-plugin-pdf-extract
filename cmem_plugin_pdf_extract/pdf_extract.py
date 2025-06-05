@@ -24,7 +24,6 @@ from cmem_plugin_base.dataintegration.plugins import WorkflowPlugin
 from cmem_plugin_base.dataintegration.ports import FixedNumberOfInputs, FixedSchemaPort
 from cmem_plugin_base.dataintegration.typed_entities.file import FileEntitySchema
 from cmem_plugin_base.dataintegration.types import (
-    BoolParameterType,
     IntParameterType,
     StringParameterType,
 )
