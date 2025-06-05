@@ -74,7 +74,7 @@ def test_one_entity_per_file(testing_env_valid: TestingEnvironment) -> None:
 def test_one_entity(testing_env_valid: TestingEnvironment) -> None:
     """Test result with table strategy "lines", all results in one entity value"""
     plugin = testing_env_valid.extract_plugin
-    plugin.all_files = True
+    plugin.all_files = "combine"
     entities = plugin.execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
 
     assert entities.schema.paths == [EntityPath("pdf_extract_output")]
@@ -88,7 +88,7 @@ def test_one_entity(testing_env_valid: TestingEnvironment) -> None:
 def test_table_strategy_text(testing_env_valid: TestingEnvironment) -> None:
     """Test if table strategy "text" parameter is valid"""
     plugin = testing_env_valid.extract_plugin
-    plugin.all_files = True
+    plugin.all_files = "combine"
     plugin.table_strategy = TABLE_EXTRACTION_STRATEGIES["text"]
     plugin.execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
 

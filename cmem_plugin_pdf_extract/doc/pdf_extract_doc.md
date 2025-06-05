@@ -70,7 +70,7 @@ empty results with the information logged. If no page selection is specified, al
 
 **<a id="parameter_doc_all_files">Combine the results from all files into a single value</a>**
 
-If enabled, the results of all files will be combined into a single output value. If disabled, each file result will be output in a separate entity.
+If set to "Combine", the results of all files will be combined into a single output value. If set to "Don't combine", each file result will be output in a separate entity.
 
 **<a id="parameter_doc_error_handling">Error Handling Mode</a>**
 

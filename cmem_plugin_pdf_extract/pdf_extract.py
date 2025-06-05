@@ -90,6 +90,15 @@ ERROR_HANDLING_PARAMETER_CHOICES = OrderedDict(
     }
 )
 
+COMBINE = "combine"
+NO_COMBINE = "no_combine"
+COMBINE_PARAMETER_CHOICES = OrderedDict(
+    {
+        COMBINE: "Combine",
+        NO_COMBINE: "Don't combine"
+    }
+)
+
 TYPE_URI = "urn:x-eccenca:PdfExtract"
 
 
@@ -117,12 +126,13 @@ TYPE_URI = "urn:x-eccenca:PdfExtract"
             default_value="",
         ),
         PluginParameter(
-            param_type=BoolParameterType(),
+            param_type=ChoiceParameterType(COMBINE_PARAMETER_CHOICES),
             name="all_files",
             label="Combine the results from all files into a single value",
-            description="""If enabled, the results of all files will be combined into a single
-            output value. If disabled, each file result will be output in a separate entity.""",
-            default_value=False,
+            description="""If set to 'Combine', the results of all files will be combined into a
+            single output value. If set to 'Don't combine', each file result will be output in a
+            separate entity.""",
+            default_value=NO_COMBINE,
         ),
         PluginParameter(
             param_type=StringParameterType(),
@@ -194,7 +204,7 @@ class PdfExtract(WorkflowPlugin):
     def __init__(  # noqa: PLR0913
         self,
         regex: str,
-        all_files: bool = False,
+        all_files: str = NO_COMBINE,
         page_selection: str = "",
         error_handling: str = RAISE_ON_ERROR,
         table_strategy: str = TABLE_LINES,
@@ -429,7 +439,7 @@ class PdfExtract(WorkflowPlugin):
                         raise
                     result = {"metadata": {"Filename": filename, "error": str(e)}, "pages": []}
 
-                if self.all_files:
+                if self.all_files == COMBINE:
                     all_output.append(result)
                 else:
                     entities.append(Entity(uri=f"{TYPE_URI}_{i}", values=[[str(result)]]))
@@ -449,7 +459,7 @@ class PdfExtract(WorkflowPlugin):
             )
         )
 
-        if self.all_files:
+        if self.all_files == COMBINE:
             entities = [Entity(uri=f"{TYPE_URI}_1", values=[[str(all_output)]])]
 
         self.log.info("Finished processing all files")

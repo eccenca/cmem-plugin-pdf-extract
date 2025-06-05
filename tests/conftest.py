@@ -134,7 +134,7 @@ def create_testing_env(generator: Generator) -> TestingEnvironment:
     regex = rf"{UUID4}_.*\.pdf"
     extract_plugin = PdfExtract(
         regex=regex,
-        all_files=False,
+        all_files="no_combine",
         page_selection="",
         error_handling=RAISE_ON_ERROR,
         table_strategy=TABLE_LINES,
