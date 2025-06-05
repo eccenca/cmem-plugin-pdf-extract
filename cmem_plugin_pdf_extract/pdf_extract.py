@@ -91,12 +91,7 @@ ERROR_HANDLING_PARAMETER_CHOICES = OrderedDict(
 
 COMBINE = "combine"
 NO_COMBINE = "no_combine"
-COMBINE_PARAMETER_CHOICES = OrderedDict(
-    {
-        COMBINE: "Combine",
-        NO_COMBINE: "Don't combine"
-    }
-)
+COMBINE_PARAMETER_CHOICES = OrderedDict({COMBINE: "Combine", NO_COMBINE: "Don't combine"})
 
 TYPE_URI = "urn:x-eccenca:PdfExtract"
 
