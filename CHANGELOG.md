@@ -6,7 +6,19 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## [Unreleased]
 
-TODO: add at least one Added, Changed, Deprecated, Removed, Fixed or Security section
+### Added
+
+- Input of file entities with FileEntitySchem allowed
+- Table and text extraction strategies
+- Cancellation of workflow
+
+### Changed
+
+- Documentation
+
+### Fixed 
+
+- Endless loop due to ProcessPoolExecutor eliminated
 
 ## [0.5.0] 2025-05-12
 
