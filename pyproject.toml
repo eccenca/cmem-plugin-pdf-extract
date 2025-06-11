@@ -20,7 +20,7 @@ pyyaml = "^6.0.2"
 types-pyyaml = "^6.0.12.20250402"
 
 [tool.poetry.dependencies.cmem-plugin-base]
-version = "^4.10.0"
+version = "^4.10.2"
 allow-prereleases = false
 
 [tool.poetry.group.dev.dependencies.cmem-cmemc]

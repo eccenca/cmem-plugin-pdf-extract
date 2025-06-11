@@ -63,6 +63,65 @@ est porro quam est veritatis sint.""",
     ],
 }
 
+FILE_1_RESULT_INPUT = {
+    "metadata": {
+        "Filename": "tests/test_1.pdf",
+        "Title": "cmem-plugin-pdfextract_test",
+        "Producer": "macOS Version 15.4.1 (Build 24E263) Quartz PDFContext",
+        "Author": "eccenca GmbH",
+        "Creator": "Word",
+        "CreationDate": "D:20250429161555Z00'00'",
+        "ModDate": "D:20250429161555Z00'00'",
+    },
+    "pages": [
+        {
+            "page_number": 1,
+            "text": """Lorem ipsum dolor sit amet. Eum consequatur ipsa aut fugit eligendi non enim rerum
+qui quia dolores. Aut nemo mollitia eos porro perferendis ea adipisci soluta aut
+delectus eveniet aut ipsum quos non sint inventore aut modi accusantium. Et
+perferendis magni ab modi quae non corrupti quam. Eum ipsum expedita aut nulla sunt
+ut expedita eaque aut ipsum facilis.
+header 1 header 2 header 3 header 4
+1/1 2/1 3/1 4/1
+1/2 2/2 3/2 4/2
+Eum dolorem placeat qui repellendus doloribus ut velit voluptates qui similique esse.
+Aut nesciunt totam et magni temporibus sed voluptate atque At repudiandae pariatur ut
+neque doloribus et quaerat natus non dolorem fuga. Vel reiciendis velit est rerum
+consequatur sed consequuntur nobis aut sequi aliquid et cupiditate dignissimos ut fuga
+provident!""",
+            "tables": [
+                [
+                    ["header 1", "header 2", "header 3", "header 4"],
+                    ["1/1", "2/1", "3/1", "4/1"],
+                    ["1/2", "2/2", "3/2", "4/2"],
+                ]
+            ],
+        },
+        {
+            "page_number": 2,
+            "text": """Qui quidem earum sit saepe galisum non dolor tempore ut tempore dolorem qui itaque
+consequuntur et nobis soluta. Aut sint maiores qui velit repudiandae sed veritatis
+eligendi ea pariatur quia ea ipsum quia. Id voluptatem velit aut molestiae impedit ut
+quaerat repellendus ab dolores illum vel debitis quam et autem quisquam quo nostrum
+quam.
+header 5 header 6 header 7 header 8
+5/1 6/1 7/1 8/1
+5/2 6/2 7/2 8/2
+Ut Quis nulla non sequi similique et veniam obcaecati sit sapiente possimus ea
+tempora temporibus ad voluptas expedita qui facilis fuga. Qui dolor reprehenderit cum
+obcaecati dolorem et consequatur architecto et adipisci rerum id reprehenderit eligendi
+est porro quam est veritatis sint.""",
+            "tables": [
+                [
+                    ["header 5", "header 6", "header 7", "header 8"],
+                    ["5/1", "6/1", "7/1", "8/1"],
+                    ["5/2", "6/2", "7/2", "8/2"],
+                ]
+            ],
+        },
+    ],
+}
+
 FILE_2_RESULT = {
     "metadata": {
         "Filename": f"{UUID4}_2.pdf",

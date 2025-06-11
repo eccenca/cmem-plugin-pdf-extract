@@ -120,13 +120,15 @@ tasks:
       # --memray is not used on windows
       - platforms: [windows]
         cmd: >
-          poetry run pytest --junitxml={{.JUNIT_FILE}}
-          --cov-report term  --cov-report xml:{{.COVERAGE_FILE}}
+          COVERAGE_PROCESS_START=.coveragerc poetry run pytest
+          --junitxml={{.JUNIT_FILE}}
+          --cov-report term --cov-report xml:{{.COVERAGE_FILE}}
           --cov-report html:{{.COVERAGE_DIR}} --cov={{.PACKAGE}}
           --html={{.HTML_FILE}} --self-contained-html
       - platforms: [darwin, linux]
         cmd: >
-          poetry run pytest --memray --junitxml={{.JUNIT_FILE}}
+          COVERAGE_PROCESS_START=.coveragerc poetry run pytest --memray
+          --junitxml={{.JUNIT_FILE}}
           --cov-report term --cov-report xml:{{.COVERAGE_FILE}}
           --cov-report html:{{.COVERAGE_DIR}} --cov={{.PACKAGE}}
           --html={{.HTML_FILE}} --self-contained-html
