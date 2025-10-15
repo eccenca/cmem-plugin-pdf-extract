@@ -4,12 +4,12 @@ Extract text and tables from PDF documents.
 
 [![eccenca Corporate Memory][cmem-shield]][cmem-link]
 
-This is a plugin for [eccenca](https://eccenca.com) [Corporate Memory](https://documentation.eccenca.com). You can install it with the [cmemc](https://eccenca.com/go/cmemc) command line clients like this:
+This is a plugin for [eccenca](https://eccenca.com) [Corporate Memory](https://documentation.eccenca.com). You can install it with the [cmemc](https://eccenca.com/go/cmemc) command line client like this:
 
 ```
 cmemc admin workspace python install cmem-plugin-pdf-extract
 ```
- [![pypi version](https://img.shields.io/pypi/v/cmem-plugin-pdf-extract)](https://pypi.org/project/cmem-plugin-pdf-extract) [![license](https://img.shields.io/pypi/l/cmem-plugin-pdf-extract)](https://pypi.org/project/cmem-plugin-pdf-extract)
+[![workflow](https://github.com/eccenca/cmem-plugin-pdf-extract/actions/workflows/check.yml/badge.svg)](https://github.com/eccenca/cmem-plugin-pdf-extract/actions) [![pypi version](https://img.shields.io/pypi/v/cmem-plugin-pdf-extract)](https://pypi.org/project/cmem-plugin-pdf-extract) [![license](https://img.shields.io/pypi/l/cmem-plugin-pdf-extract)](https://pypi.org/project/cmem-plugin-pdf-extract)
 [![poetry][poetry-shield]][poetry-link] [![ruff][ruff-shield]][ruff-link] [![mypy][mypy-shield]][mypy-link] [![copier][copier-shield]][copier] 
 
 [cmem-link]: https://documentation.eccenca.com
