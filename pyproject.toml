@@ -15,16 +15,16 @@ homepage = "https://github.com/eccenca/cmem-plugin-pdf-extract"
 
 [tool.poetry.dependencies]# if you need to change python version here, change it also in .python-version
 python = "^3.13"
+cmem-cmempy = "^25.3.0"
 pdfplumber = "^0.11.6"
 pyyaml = "^6.0.2"
-types-pyyaml = "^6.0.12.20250402"
 
 [tool.poetry.dependencies.cmem-plugin-base]
-version = "^4.10.2"
+version = "^4.12.0"
 allow-prereleases = false
 
 [tool.poetry.group.dev.dependencies.cmem-cmemc]
-version = "^24.3.0"
+version = "^25.4.0"
 
 [tool.poetry.group.dev.dependencies]
 deptry = "^0.23.1"
