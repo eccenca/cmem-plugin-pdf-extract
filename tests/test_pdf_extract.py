@@ -242,7 +242,11 @@ def test_wrong_text_extraction() -> None:
 def test_wrong_file_type(testing_env_valid: TestingEnvironment) -> None:
     """Test for wrong filetype of the FileEntitySchema"""
     schema = FileEntitySchema()
-    files = [File(path="tests/test_1.pdf", file_type="unsupported", mime="application/pdf")]
+    files = [
+        File(
+            path="tests/test_1.pdf", file_type="unsupported", mime="application/pdf", entry_path=""
+        )
+    ]
     entities = [schema.to_entity(file) for file in files]
     input_entities = Entities(entities=entities, schema=schema)
 
@@ -254,7 +258,9 @@ def test_wrong_file_type(testing_env_valid: TestingEnvironment) -> None:
 def test_input_project_file(testing_env_valid: TestingEnvironment) -> None:
     """Test execution with Project type files as input"""
     schema = FileEntitySchema()
-    files = [File(path=f"{UUID4}_1.pdf", file_type="Project", mime="application/pdf")]
+    files = [
+        File(path=f"{UUID4}_1.pdf", file_type="Project", mime="application/pdf", entry_path="")
+    ]
     entities = [schema.to_entity(file) for file in files]
     input_entities = Entities(entities=entities, schema=schema)
 
