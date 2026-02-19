@@ -10,6 +10,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 - Update template and dependencies
 
+## [1.1.1] 2026-02-19
+
+### Changed
+
+- Update template and dependencies
+
 ## [1.1.0] 2025-10-20
 
 ### Changed
