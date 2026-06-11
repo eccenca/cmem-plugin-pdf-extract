@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/)
 
+## [Unreleased]
+
+### Removed
+
+- The `regex` parameter and the `test_regex` plugin action.
+
 ## [1.1.1] 2026-02-19
 
 ### Changed

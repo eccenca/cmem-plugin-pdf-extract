@@ -11,6 +11,8 @@ import pytest
 import yaml
 from cmem.cmempy.workspace.projects.project import delete_project, make_new_project
 from cmem.cmempy.workspace.projects.resources.resource import create_resource
+from cmem_plugin_base.dataintegration.entity import Entities
+from cmem_plugin_base.dataintegration.typed_entities.file import FileEntitySchema, ProjectFile
 
 from cmem_plugin_pdf_extract.extraction_strategies.table_extraction_strategies import (
     LINES_STRATEGY,
@@ -31,6 +33,13 @@ from . import __path__
 
 PROJECT_ID = f"project_pdf_extract_plugin_test_{UUID4}"
 TYPE_URI = "urn:x-eccenca:PdfExtract"
+
+
+def project_file_entities(names: list[str]) -> Entities:
+    """Wrap project resource names as a FileEntitySchema Entities input."""
+    schema = FileEntitySchema()
+    entities = [schema.to_entity(ProjectFile(path=name, mime="application/pdf")) for name in names]
+    return Entities(entities=entities, schema=schema)
 
 
 def get_env_or_skip(key: str, message: str | None = None) -> str:
@@ -124,16 +133,13 @@ class TestingEnvironment:
 
     __test__ = False
 
-    regex: str
     extract_plugin: PdfExtract
 
 
 def create_testing_env(generator: Generator) -> TestingEnvironment:
     """Help to create a TestingEnvironment"""
     _ = generator
-    regex = rf"{UUID4}_.*\.pdf"
     extract_plugin = PdfExtract(
-        regex=regex,
         all_files="no_combine",
         page_selection="",
         error_handling=RAISE_ON_ERROR,
@@ -148,7 +154,6 @@ def create_testing_env(generator: Generator) -> TestingEnvironment:
         max_processes=MAX_PROCESSES_DEFAULT,
     )
     return TestingEnvironment(
-        regex=regex,
         extract_plugin=extract_plugin,
     )
 

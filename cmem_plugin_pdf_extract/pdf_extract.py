@@ -1,6 +1,5 @@
 """Extract text from PDF files"""
 
-import re
 from collections import OrderedDict
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -9,14 +8,12 @@ from os import cpu_count
 from typing import Any
 
 import yaml
-from cmem.cmempy.workspace.projects.resources import get_resources
 from cmem.cmempy.workspace.projects.resources.resource import get_resource
 from cmem_plugin_base.dataintegration.context import (
     ExecutionContext,
     ExecutionReport,
-    PluginContext,
 )
-from cmem_plugin_base.dataintegration.description import Icon, Plugin, PluginAction, PluginParameter
+from cmem_plugin_base.dataintegration.description import Icon, Plugin, PluginParameter
 from cmem_plugin_base.dataintegration.entity import Entities, Entity, EntityPath, EntitySchema
 from cmem_plugin_base.dataintegration.parameter.choice import ChoiceParameterType
 from cmem_plugin_base.dataintegration.parameter.multiline import MultilineStringParameterType
@@ -101,24 +98,7 @@ TYPE_URI = "urn:x-eccenca:PdfExtract"
     description="Extract text and tables from PDF files",
     documentation=DOC,
     icon=Icon(package=__package__, file_name="pdf-extract.svg"),
-    actions=[
-        PluginAction(
-            name="test_regex",
-            label="Preview files",
-            description="Preview all of the PDF files that have been found.",
-        )
-    ],
     parameters=[
-        PluginParameter(
-            param_type=StringParameterType(),
-            name="regex",
-            label="File name regex filter",
-            description="Regular expression for filtering resources of the project. If this "
-            "parameter is set, the input port will be closed and project "
-            "files will be compared against the regular expression.",
-            advanced=True,
-            default_value="",
-        ),
         PluginParameter(
             param_type=ChoiceParameterType(COMBINE_PARAMETER_CHOICES),
             name="all_files",
@@ -197,7 +177,6 @@ class PdfExtract(WorkflowPlugin):
 
     def __init__(  # noqa: PLR0913
         self,
-        regex: str,
         all_files: str = NO_COMBINE,
         page_selection: str = "",
         error_handling: str = RAISE_ON_ERROR,
@@ -224,15 +203,10 @@ class PdfExtract(WorkflowPlugin):
             raise ValueError(f"Invalid error handling mode: {error_handling}")
         self.error_handling = error_handling
 
-        self.regex = rf"{regex}"
         self.all_files = all_files
         self.max_processes = max_processes
         self.schema = EntitySchema(type_uri=TYPE_URI, paths=[EntityPath("pdf_extract_output")])
-        self.input_ports = (
-            FixedNumberOfInputs([FixedSchemaPort(schema=FileEntitySchema())])
-            if not self.regex
-            else FixedNumberOfInputs([])
-        )
+        self.input_ports = FixedNumberOfInputs([FixedSchemaPort(schema=FileEntitySchema())])
         self.output_port = FixedSchemaPort(self.schema)
 
     def set_text_strategy(self, custom_text_strategy: str, text_strategy: str) -> None:
@@ -276,23 +250,6 @@ class PdfExtract(WorkflowPlugin):
                 raise YAMLError(f"Invalid custom table strategy: {e}") from e
         else:
             self.table_strategy = TABLE_EXTRACTION_STRATEGIES[table_strategy]
-
-    def test_regex(self, context: PluginContext) -> str:
-        """Plugin Action to test the regex pattern against existing files"""
-        output = ["No regular expression was given!"]
-        if self.regex != "":
-            setup_cmempy_user_access(context.user)
-            files_found = self.get_file_list(context.project_id)
-            output = [
-                f"{len(files_found)} file{'' if len(files_found) == 1 else 's'} found matching "
-                f"the regular expression in the project files."
-            ]
-            output.extend(f"- {file}" for file in files_found)
-        output.append(
-            "\nThe preview does not show results from input ports as they are usually "
-            "not available before the execution"
-        )
-        return "\n".join(output)
 
     @staticmethod
     def extract_pdf_data_worker(  # noqa: PLR0913
@@ -460,28 +417,16 @@ class PdfExtract(WorkflowPlugin):
 
         return Entities(entities=entities, schema=self.schema)
 
-    def get_file_list(self, project_id: str) -> list:
-        """Get file list using regex pattern"""
-        return [r["name"] for r in get_resources(project_id) if re.fullmatch(self.regex, r["name"])]
-
     def execute(self, inputs: Sequence[Entities], context: ExecutionContext) -> Entities:
         """Run the workflow operator."""
         context.report.update(ExecutionReport(entity_count=0, operation_desc="files processed"))
         self.context = context
 
-        if len(inputs) != 0:
-            setup_cmempy_user_access(context.user)
-            filenames = []
-            filetypes = []
-            for entity in inputs[0].entities:
-                file = FileEntitySchema().from_entity(entity=entity)
-                filenames.append(file.path)
-                filetypes.append(file.file_type)
-            return self.get_entities(filenames, filetypes)
-
         setup_cmempy_user_access(context.user)
-        filenames = self.get_file_list(context.task.project_id())
-        filetype = ["Project" for _ in self.get_file_list(context.task.project_id())]
-        if not filenames:
-            raise FileNotFoundError("No matching files found")
-        return self.get_entities(filenames, filetype)
+        filenames = []
+        filetypes = []
+        for entity in inputs[0].entities:
+            file = FileEntitySchema().from_entity(entity=entity)
+            filenames.append(file.path)
+            filetypes.append(file.file_type)
+        return self.get_entities(filenames, filetypes)
