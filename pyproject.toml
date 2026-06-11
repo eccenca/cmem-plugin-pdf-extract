@@ -40,6 +40,9 @@ ruff = "^0.15.0"
 trivy-py-ecc = "^0.69"
 types-pyyaml = "^6.0.12.20250915"
 
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.8"
+
 [build-system]
 requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
 build-backend = "poetry_dynamic_versioning.backend"
