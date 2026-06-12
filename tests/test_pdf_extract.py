@@ -13,6 +13,7 @@ from cmem_plugin_base.dataintegration.typed_entities.file import (
     LocalFile,
     ProjectFile,
 )
+from cmem_plugin_base.testing import TestExecutionContext
 from pdfplumber.utils.exceptions import PdfminerException
 from yaml import YAMLError, safe_load
 
@@ -35,7 +36,6 @@ from tests.results import (
     FILE_PAGES_NOT_EXIST_RESULT,
     UUID4,
 )
-from tests.utils import TestExecutionContext
 
 from .conftest import PROJECT_ID, TYPE_URI, TestingEnvironment, project_file_entities
 
