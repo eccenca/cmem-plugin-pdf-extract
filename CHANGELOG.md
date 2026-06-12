@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## [Unreleased]
 
+### Changed
+
+- Replace cmempy with cmem-client
+
 ### Removed
 
 - The `regex` parameter and the `test_regex` plugin action.
