@@ -1,14 +1,17 @@
 """Extract text from PDF files"""
 
+import tempfile
 from collections import OrderedDict
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import BytesIO
 from os import cpu_count
+from pathlib import Path
 from typing import Any
 
 import yaml
-from cmem.cmempy.workspace.projects.resources.resource import get_resource
+from cmem_client.client import Client
+from cmem_client.repositories.files import FilesRepository
 from cmem_plugin_base.dataintegration.context import (
     ExecutionContext,
     ExecutionReport,
@@ -252,6 +255,40 @@ class PdfExtract(WorkflowPlugin):
             self.table_strategy = TABLE_EXTRACTION_STRATEGIES[table_strategy]
 
     @staticmethod
+    def _get_file_content(project_id: str, filename: str, context: ExecutionContext) -> BytesIO:
+        """Get file content on-demand using FilesRepository."""
+        # Get client from context
+        client = Client.from_context(context)
+        files_repo = FilesRepository(client=client)
+        files_repo.fetch_data()
+
+        key = f"{project_id}:{filename}"
+
+        if key not in files_repo._dict:  # noqa: SLF001
+            raise FileNotFoundError(f"File {filename} not found in project {project_id}")
+
+        # Create temporary file and export
+        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+            temp_path = Path(tmp_file.name)
+
+        try:
+            exported_path = files_repo._export_item(key=key, path=temp_path, replace=True)  # noqa: SLF001
+
+            # Read into BytesIO
+            with exported_path.open("rb") as f:
+                content = f.read()
+
+            # Clean up temporary file
+            Path(exported_path).unlink(missing_ok=True)
+            return BytesIO(content)
+
+        except Exception:
+            # Clean up temporary file if something went wrong
+            if Path(temp_path).exists():
+                Path(temp_path).unlink(missing_ok=True)
+            raise
+
+    @staticmethod
     def extract_pdf_data_worker(  # noqa: PLR0913
         filename: str,
         page_numbers: list,
@@ -260,14 +297,18 @@ class PdfExtract(WorkflowPlugin):
         text_settings: dict,
         error_handling: str,
         file_origin: str,
+        context: ExecutionContext,
     ) -> dict:
         """Extract structured PDF data (sequential processing)."""
         output: dict = {"metadata": {"Filename": filename}, "pages": []}
         binary_file: str | BytesIO
+
         if file_origin == "Local":
             binary_file = filename
         else:
-            binary_file = BytesIO(get_resource(project_id, filename))
+            # Get file content on-demand
+            binary_file = PdfExtract._get_file_content(project_id, filename, context)
+
         page_number = None
         try:
             with pdfplumber_open(binary_file) as pdf:
@@ -372,6 +413,7 @@ class PdfExtract(WorkflowPlugin):
                     self.text_strategy,
                     self.error_handling,
                     file_origin,
+                    self.context,  # Pass context to worker
                 ): filename
                 for filename, file_origin in zip(filenames, file_origins, strict=True)
             }
