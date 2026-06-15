@@ -11,7 +11,6 @@ from typing import Any
 
 import yaml
 from cmem_client.client import Client
-from cmem_client.repositories.files import FilesRepository
 from cmem_plugin_base.dataintegration.context import (
     ExecutionContext,
     ExecutionReport,
@@ -27,7 +26,6 @@ from cmem_plugin_base.dataintegration.types import (
     IntParameterType,
     StringParameterType,
 )
-from cmem_plugin_base.dataintegration.utils import setup_cmempy_user_access
 from pdfplumber import open as pdfplumber_open
 from pdfplumber.page import Page
 from yaml import YAMLError, safe_load
@@ -259,20 +257,16 @@ class PdfExtract(WorkflowPlugin):
         """Get file content on-demand using FilesRepository."""
         # Get client from context
         client = Client.from_context(context)
-        files_repo = FilesRepository(client=client)
-        files_repo.fetch_data()
+        client.files.fetch_data()
 
         key = f"{project_id}:{filename}"
-
-        if key not in files_repo._dict:  # noqa: SLF001
-            raise FileNotFoundError(f"File {filename} not found in project {project_id}")
 
         # Create temporary file and export
         with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
             temp_path = Path(tmp_file.name)
 
         try:
-            exported_path = files_repo._export_item(key=key, path=temp_path, replace=True)  # noqa: SLF001
+            exported_path = client.files.export_item(key=key, path=temp_path, replace=True)
 
             # Read into BytesIO
             with exported_path.open("rb") as f:
@@ -464,7 +458,6 @@ class PdfExtract(WorkflowPlugin):
         context.report.update(ExecutionReport(entity_count=0, operation_desc="files processed"))
         self.context = context
 
-        setup_cmempy_user_access(context.user)
         filenames = []
         filetypes = []
         for entity in inputs[0].entities:
