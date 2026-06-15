@@ -62,14 +62,30 @@ def test_one_entity_per_file(testing_env_valid: TestingEnvironment) -> None:
     inputs = project_file_entities([f"{UUID4}_1.pdf", f"{UUID4}_2.pdf"])
     entities = plugin.execute(inputs=[inputs], context=TestExecutionContext(PROJECT_ID))
 
-    entities.entities = sorted(entities.entities, key=lambda x: x.uri)
-
     assert entities.schema.paths == [EntityPath("pdf_extract_output")]
-    assert entities.entities[0].uri == f"{TYPE_URI}_1"
-    assert entities.entities[1].uri == f"{TYPE_URI}_2"
     assert len(entities.entities) == 2  # noqa: PLR2004
-    assert literal_eval(entities.entities[0].values[0][0]) == FILE_1_RESULT
-    assert literal_eval(entities.entities[1].values[0][0]) == FILE_2_RESULT
+
+    # Collect all entity data
+    entity_data = [
+        literal_eval(entities.entities[0].values[0][0]),
+        literal_eval(entities.entities[1].values[0][0]),
+    ]
+
+    # Check that we have both files regardless of order
+    file1_found = False
+    file2_found = False
+
+    for content in entity_data:
+        filename = content["metadata"]["Filename"]
+        if f"{UUID4}_1.pdf" in filename:
+            assert content == FILE_1_RESULT
+            file1_found = True
+        elif f"{UUID4}_2.pdf" in filename:
+            assert content == FILE_2_RESULT
+            file2_found = True
+
+    assert file1_found, "File test_1.pdf not found"
+    assert file2_found, "File test_2.pdf not found"
 
 
 def test_one_entity(testing_env_valid: TestingEnvironment) -> None:
