@@ -129,6 +129,23 @@ def setup_page_selection() -> Generator:
     client.projects.delete_item(PROJECT_ID)
 
 
+@pytest.fixture
+def setup_umlauts() -> Generator:
+    """Set up Validate test"""
+    client = get_test_client()
+    with suppress(Exception):
+        client.projects.delete_item(PROJECT_ID)
+    client.projects.create_item(Project(name=PROJECT_ID))
+
+    path = Path(__path__[0]) / "test_with_umlauts_äöü.pdf"
+    key = f"{PROJECT_ID}:{UUID4}_with_umlauts_äöü.pdf"
+    client.files.import_item(path=path, key=key, replace=True)
+
+    yield
+
+    client.projects.delete_item(PROJECT_ID)
+
+
 @dataclass
 class TestingEnvironment:
     """Testing Environment"""
@@ -192,3 +209,9 @@ def testing_env_corrupted(setup_corrupted: Generator) -> TestingEnvironment:
 def testing_env_page_selection(setup_page_selection: Generator) -> TestingEnvironment:
     """Provide testing environment"""
     return create_testing_env(setup_page_selection)
+
+
+@pytest.fixture
+def testing_env_umlauts(setup_umlauts: Generator) -> TestingEnvironment:
+    """Provide testing environment"""
+    return create_testing_env(setup_umlauts)

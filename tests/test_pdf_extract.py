@@ -33,6 +33,7 @@ from tests.results import (
     FILE_CORRUPTED_RESULT_1,
     FILE_CORRUPTED_RESULT_2,
     FILE_PAGES_NOT_EXIST_RESULT,
+    FILE_UMLAUTS_RESULT,
     UUID4,
 )
 
@@ -299,3 +300,30 @@ def test_different_file_type_inputs(testing_env_valid: TestingEnvironment) -> No
     test_execution_context = testing_env_valid.test_execution_context
     result = plugin.execute(inputs=[input_entities], context=test_execution_context)
     assert len(list(result.entities)) == len(files)
+
+
+def test_file_with_umlauts(testing_env_umlauts: TestingEnvironment) -> None:
+    """Test result with table strategy "lines", one entity per file"""
+    plugin = testing_env_umlauts.extract_plugin
+    test_execution_context = testing_env_umlauts.test_execution_context
+    inputs = project_file_entities([f"{UUID4}_with_umlauts_äöü.pdf"])
+    entities = plugin.execute(inputs=[inputs], context=test_execution_context)
+
+    assert entities.schema.paths == [EntityPath("pdf_extract_output")]
+    assert len(entities.entities) == 1
+
+    # Collect all entity data
+    entity_data = [
+        literal_eval(entities.entities[0].values[0][0]),
+    ]
+
+    # Check that we have both files regardless of order
+    file1_found = False
+
+    for content in entity_data:
+        filename = content["metadata"]["Filename"]
+        if f"{UUID4}_with_umlauts_äöü.pdf" in filename:
+            assert content == FILE_UMLAUTS_RESULT
+            file1_found = True
+
+    assert file1_found, "File test_with_umlauts_äöü.pdf not found"
