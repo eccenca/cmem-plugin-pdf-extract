@@ -45,6 +45,12 @@ from cmem_plugin_pdf_extract.utils import (
     validate_page_selection,
 )
 
+
+def _strategy_default(strategy: dict[Any, Any]) -> str:
+    """Format a strategy dict as YAML comment lines for use as a default parameter."""
+    return "\n".join(f"# {s}" for s in yaml.dump(strategy).strip().splitlines())
+
+
 MAX_PROCESSES_DEFAULT = cpu_count() - 1  # type: ignore[operator]
 TABLE_LINES = "lines"
 TABLE_TEXT = "text"
@@ -183,12 +189,8 @@ class PdfExtract(WorkflowPlugin):
         error_handling: str = RAISE_ON_ERROR,
         table_strategy: str = TABLE_LINES,
         text_strategy: str = TEXT_DEFAULT,
-        custom_table_strategy: str = "\n".join(
-            f"# {_}" for _ in yaml.dump(LINES_STRATEGY).strip().splitlines()
-        ),
-        custom_text_strategy: str = "\n".join(
-            f"# {_}" for _ in yaml.dump(DEFAULT_TEXT_EXTRACTION).strip().splitlines()
-        ),
+        custom_table_strategy: str = _strategy_default(LINES_STRATEGY),
+        custom_text_strategy: str = _strategy_default(DEFAULT_TEXT_EXTRACTION),
         max_processes: int = MAX_PROCESSES_DEFAULT,
     ) -> None:
         if page_selection:
