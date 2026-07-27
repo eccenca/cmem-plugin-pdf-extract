@@ -33,49 +33,69 @@ from tests.results import (
     FILE_CORRUPTED_RESULT_1,
     FILE_CORRUPTED_RESULT_2,
     FILE_PAGES_NOT_EXIST_RESULT,
+    FILE_UMLAUTS_RESULT,
     UUID4,
 )
-from tests.utils import TestExecutionContext, TestPluginContext
 
-from .conftest import PROJECT_ID, TYPE_URI, TestingEnvironment
+from .conftest import TYPE_URI, TestingEnvironment, project_file_entities
 
 
-def normalise(item: Any) -> Any:  # noqa: ANN401
-    """Normalise item"""
+def normalize(item: Any) -> Any:  # noqa: ANN401
+    """Normalize item"""
     if isinstance(item, dict):
         return json.dumps(item, sort_keys=True)
     if isinstance(item, list):
-        return json.dumps(sorted([normalise(i) for i in item]))
+        return json.dumps(sorted([normalize(i) for i in item]))
     return item
 
 
 def unordered_deep_equal(list1: list, list2: list) -> bool:
     """Compare unordered list of objects"""
-    norm1 = [normalise(item) for item in list1]
-    norm2 = [normalise(item) for item in list2]
+    norm1 = [normalize(item) for item in list1]
+    norm2 = [normalize(item) for item in list2]
     return Counter(norm1) == Counter(norm2)
 
 
 def test_one_entity_per_file(testing_env_valid: TestingEnvironment) -> None:
     """Test result with table strategy "lines", one entity per file"""
     plugin = testing_env_valid.extract_plugin
-    entities = plugin.execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
-
-    entities.entities = sorted(entities.entities, key=lambda x: x.uri)
+    test_execution_context = testing_env_valid.test_execution_context
+    inputs = project_file_entities([f"{UUID4}_1.pdf", f"{UUID4}_2.pdf"])
+    entities = plugin.execute(inputs=[inputs], context=test_execution_context)
 
     assert entities.schema.paths == [EntityPath("pdf_extract_output")]
-    assert entities.entities[0].uri == f"{TYPE_URI}_1"
-    assert entities.entities[1].uri == f"{TYPE_URI}_2"
     assert len(entities.entities) == 2  # noqa: PLR2004
-    assert literal_eval(entities.entities[0].values[0][0]) == FILE_1_RESULT
-    assert literal_eval(entities.entities[1].values[0][0]) == FILE_2_RESULT
+
+    # Collect all entity data
+    entity_data = [
+        literal_eval(entities.entities[0].values[0][0]),
+        literal_eval(entities.entities[1].values[0][0]),
+    ]
+
+    # Check that we have both files regardless of order
+    file1_found = False
+    file2_found = False
+
+    for content in entity_data:
+        filename = content["metadata"]["Filename"]
+        if f"{UUID4}_1.pdf" in filename:
+            assert content == FILE_1_RESULT
+            file1_found = True
+        elif f"{UUID4}_2.pdf" in filename:
+            assert content == FILE_2_RESULT
+            file2_found = True
+
+    assert file1_found, "File test_1.pdf not found"
+    assert file2_found, "File test_2.pdf not found"
 
 
 def test_one_entity(testing_env_valid: TestingEnvironment) -> None:
     """Test result with table strategy "lines", all results in one entity value"""
     plugin = testing_env_valid.extract_plugin
     plugin.all_files = "combine"
-    entities = plugin.execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
+    test_execution_context = testing_env_valid.test_execution_context
+    inputs = project_file_entities([f"{UUID4}_1.pdf", f"{UUID4}_2.pdf"])
+    entities = plugin.execute(inputs=[inputs], context=test_execution_context)
 
     assert entities.schema.paths == [EntityPath("pdf_extract_output")]
     assert entities.entities[0].uri == f"{TYPE_URI}_1"
@@ -90,16 +110,19 @@ def test_table_strategy_text(testing_env_valid: TestingEnvironment) -> None:
     plugin = testing_env_valid.extract_plugin
     plugin.all_files = "combine"
     plugin.table_strategy = TABLE_EXTRACTION_STRATEGIES["text"]
-    plugin.execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
+    test_execution_context = testing_env_valid.test_execution_context
+    inputs = project_file_entities([f"{UUID4}_1.pdf", f"{UUID4}_2.pdf"])
+    plugin.execute(inputs=[inputs], context=test_execution_context)
 
 
 def test_page_selection(testing_env_page_selection: TestingEnvironment) -> None:
     """Test result with page selection"""
     plugin = testing_env_page_selection.extract_plugin
-    plugin.regex = f"{UUID4}_3.pdf"
     plugin.table_strategy = TABLE_EXTRACTION_STRATEGIES["lines"]
     plugin.page_numbers = parse_page_selection("1,3-5,8-10")
-    entities = plugin.execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
+    test_execution_context = testing_env_page_selection.test_execution_context
+    inputs = project_file_entities([f"{UUID4}_3.pdf"])
+    entities = plugin.execute(inputs=[inputs], context=test_execution_context)
 
     assert literal_eval(entities.entities[0].values[0][0]) == FILE_3_RESULT
 
@@ -107,10 +130,11 @@ def test_page_selection(testing_env_page_selection: TestingEnvironment) -> None:
 def test_page_selection_not_exist(testing_env_page_selection: TestingEnvironment) -> None:
     """Test result with page selection where no pages exist"""
     plugin = testing_env_page_selection.extract_plugin
-    plugin.regex = f"{UUID4}_3.pdf"
     plugin.table_strategy = TABLE_EXTRACTION_STRATEGIES["lines"]
     plugin.page_numbers = parse_page_selection("8")
-    entities = plugin.execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
+    test_execution_context = testing_env_page_selection.test_execution_context
+    inputs = project_file_entities([f"{UUID4}_3.pdf"])
+    entities = plugin.execute(inputs=[inputs], context=test_execution_context)
 
     assert literal_eval(entities.entities[0].values[0][0]) == FILE_PAGES_NOT_EXIST_RESULT
 
@@ -120,9 +144,10 @@ def test_invalid_pdf_1(testing_env_corrupted: TestingEnvironment) -> None:
     filename = f"{UUID4}_corrupted_1.pdf"
 
     plugin = testing_env_corrupted.extract_plugin
-    plugin.regex = filename
     plugin.error_handling = "ignore"
-    entities = plugin.execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
+    test_execution_context = testing_env_corrupted.test_execution_context
+    inputs = project_file_entities([filename])
+    entities = plugin.execute(inputs=[inputs], context=test_execution_context)
 
     assert literal_eval(entities.entities[0].values[0][0]) == FILE_CORRUPTED_RESULT_1
 
@@ -131,16 +156,17 @@ def test_invalid_pdf_1(testing_env_corrupted: TestingEnvironment) -> None:
     with pytest.raises(
         PdfminerException, match=f"File {filename}: No /Root object! - Is this really a PDF?"
     ):
-        plugin.execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
+        plugin.execute(inputs=[inputs], context=test_execution_context)
 
 
 def test_invalid_pdf_2(testing_env_corrupted: TestingEnvironment) -> None:
     """Test with corrupted pdf"""
     filename = f"{UUID4}_corrupted_2.pdf"
     plugin = testing_env_corrupted.extract_plugin
-    plugin.regex = filename
     plugin.table_strategy = TABLE_EXTRACTION_STRATEGIES["lines"]
-    entities = plugin.execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
+    test_execution_context = testing_env_corrupted.test_execution_context
+    inputs = project_file_entities([filename])
+    entities = plugin.execute(inputs=[inputs], context=test_execution_context)
 
     assert literal_eval(entities.entities[0].values[0][0]) == FILE_CORRUPTED_RESULT_2
 
@@ -151,24 +177,22 @@ def test_invalid_pdf_2(testing_env_corrupted: TestingEnvironment) -> None:
         match=f"File {filename}, page 1: Text extraction error: Data-loss while decompressing "
         f"corrupted data",
     ):
-        plugin.execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
+        plugin.execute(inputs=[inputs], context=test_execution_context)
 
 
 def test_custom_table_strategy_parameter() -> None:
     """Test custom table extraction strategy parameter"""
     plugin = PdfExtract(
-        regex="test",
         table_strategy="custom",
         custom_table_strategy=CUSTOM_TABLE_STRATEGY_SETTING,
     )
     assert plugin.table_strategy == safe_load(CUSTOM_TABLE_STRATEGY_SETTING)
 
     with pytest.raises(ValueError, match="No custom table strategy defined"):
-        PdfExtract(regex="test", table_strategy="custom")
+        PdfExtract(table_strategy="custom")
 
     with pytest.raises(YAMLError, match="Invalid custom table strategy"):
         PdfExtract(
-            regex="test",
             table_strategy="custom",
             custom_table_strategy=CUSTOM_TABLE_STRATEGY_SETTING + "this:should:fail",
         )
@@ -177,29 +201,16 @@ def test_custom_table_strategy_parameter() -> None:
 def test_invalid_page_selection_format() -> None:
     """Test page selection parsing."""
     with pytest.raises(ValueError, match="Invalid page selection format"):
-        PdfExtract(regex="test", page_selection="invalid")
+        PdfExtract(page_selection="invalid")
 
     with pytest.raises(ValueError, match=r"Invalid range in page selection: 2-1 \(start > end\)"):
-        PdfExtract(regex="test", page_selection="2-1")
+        PdfExtract(page_selection="2-1")
 
     with pytest.raises(ValueError, match=r"Page numbers must be ≥ 1: 0"):
-        PdfExtract(regex="test", page_selection="0,1")
+        PdfExtract(page_selection="0,1")
 
     with pytest.raises(ValueError, match=r"Page numbers must be ≥ 1: 0"):
-        PdfExtract(regex="test", page_selection="5,0-2")
-
-
-def test_regex_plugin_action(testing_env_valid: TestingEnvironment) -> None:
-    """Test plugin action"""
-    result = testing_env_valid.extract_plugin.test_regex(TestPluginContext(PROJECT_ID))
-    assert (
-        result
-        == """2 files found matching the regular expression in the project files.
-- c394802542bd4c9990cca50d3104e6a0_1.pdf
-- c394802542bd4c9990cca50d3104e6a0_2.pdf
-
-The preview does not show results from input ports as they are usually not available before the execution"""  # noqa: E501
-    )
+        PdfExtract(page_selection="5,0-2")
 
 
 def test_input_port_pdf(testing_env_valid: TestingEnvironment) -> None:
@@ -210,9 +221,9 @@ def test_input_port_pdf(testing_env_valid: TestingEnvironment) -> None:
     input_entities = Entities(entities=entities, schema=schema)
 
     plugin = testing_env_valid.extract_plugin
-    plugin.regex = "tests/test_1.pdf"
+    test_execution_context = testing_env_valid.test_execution_context
 
-    results = plugin.execute(inputs=[input_entities], context=TestExecutionContext())
+    results = plugin.execute(inputs=[input_entities], context=test_execution_context)
 
     assert literal_eval(results.entities[0].values[0][0]) == FILE_1_RESULT_INPUT
 
@@ -223,12 +234,14 @@ def test_text_extraction_strategies(testing_env_valid: TestingEnvironment) -> No
     table_strategies = ["lines", "sparse", "lattice", "text"]
 
     plugin = testing_env_valid.extract_plugin
+    test_execution_context = testing_env_valid.test_execution_context
+    inputs = project_file_entities([f"{UUID4}_1.pdf", f"{UUID4}_2.pdf"])
 
     for text_strategy in text_strategies:
         for table_strategy in table_strategies:
             plugin.table_strategy = TABLE_EXTRACTION_STRATEGIES[table_strategy]
             plugin.text_strategy = TEXT_EXTRACTION_STRATEGIES[text_strategy]
-            result = plugin.execute(inputs=[], context=TestExecutionContext(PROJECT_ID))
+            result = plugin.execute(inputs=[inputs], context=test_execution_context)
             assert len(list(result.entities)) > 0
 
 
@@ -236,7 +249,7 @@ def test_wrong_text_extraction() -> None:
     """Test invalid text strategy"""
     wrong_text_strategy = "wrong"
     with pytest.raises(ValueError, match=f"Invalid text strategy: {wrong_text_strategy}"):
-        PdfExtract(regex="test", text_strategy=wrong_text_strategy)
+        PdfExtract(text_strategy=wrong_text_strategy)
 
 
 def test_wrong_file_type(testing_env_valid: TestingEnvironment) -> None:
@@ -251,8 +264,9 @@ def test_wrong_file_type(testing_env_valid: TestingEnvironment) -> None:
     input_entities = Entities(entities=entities, schema=schema)
 
     plugin = testing_env_valid.extract_plugin
+    test_execution_context = testing_env_valid.test_execution_context
     with pytest.raises(ValueError, match=r"^File 'tests/test_1.pdf' has unexpected type"):
-        plugin.execute(inputs=[input_entities], context=TestExecutionContext())
+        plugin.execute(inputs=[input_entities], context=test_execution_context)
 
 
 def test_input_project_file(testing_env_valid: TestingEnvironment) -> None:
@@ -265,7 +279,8 @@ def test_input_project_file(testing_env_valid: TestingEnvironment) -> None:
     input_entities = Entities(entities=entities, schema=schema)
 
     plugin = testing_env_valid.extract_plugin
-    results = plugin.execute(inputs=[input_entities], context=TestExecutionContext(PROJECT_ID))
+    test_execution_context = testing_env_valid.test_execution_context
+    results = plugin.execute(inputs=[input_entities], context=test_execution_context)
 
     assert len(list(results.entities)) == 1
 
@@ -282,5 +297,33 @@ def test_different_file_type_inputs(testing_env_valid: TestingEnvironment) -> No
     input_entities = Entities(entities=entities, schema=schema)
 
     plugin = testing_env_valid.extract_plugin
-    result = plugin.execute(inputs=[input_entities], context=TestExecutionContext(PROJECT_ID))
+    test_execution_context = testing_env_valid.test_execution_context
+    result = plugin.execute(inputs=[input_entities], context=test_execution_context)
     assert len(list(result.entities)) == len(files)
+
+
+def test_file_with_umlauts(testing_env_umlauts: TestingEnvironment) -> None:
+    """Test result with table strategy "lines", one entity per file"""
+    plugin = testing_env_umlauts.extract_plugin
+    test_execution_context = testing_env_umlauts.test_execution_context
+    inputs = project_file_entities([f"{UUID4}_with_umlauts_äöü.pdf"])
+    entities = plugin.execute(inputs=[inputs], context=test_execution_context)
+
+    assert entities.schema.paths == [EntityPath("pdf_extract_output")]
+    assert len(entities.entities) == 1
+
+    # Collect all entity data
+    entity_data = [
+        literal_eval(entities.entities[0].values[0][0]),
+    ]
+
+    # Check that we have both files regardless of order
+    file1_found = False
+
+    for content in entity_data:
+        filename = content["metadata"]["Filename"]
+        if f"{UUID4}_with_umlauts_äöü.pdf" in filename:
+            assert content == FILE_UMLAUTS_RESULT
+            file1_found = True
+
+    assert file1_found, "File test_with_umlauts_äöü.pdf not found"

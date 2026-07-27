@@ -1,16 +1,19 @@
 """Pytest configuration"""
 
+import os
 from collections.abc import Generator
 from contextlib import suppress
 from dataclasses import dataclass
-from io import BytesIO
 from os import environ
 from pathlib import Path
 
 import pytest
 import yaml
-from cmem.cmempy.workspace.projects.project import delete_project, make_new_project
-from cmem.cmempy.workspace.projects.resources.resource import create_resource
+from cmem_client.client import Client
+from cmem_client.models.project import Project
+from cmem_plugin_base.dataintegration.entity import Entities
+from cmem_plugin_base.dataintegration.typed_entities.file import FileEntitySchema, ProjectFile
+from cmem_plugin_base.testing import TestExecutionContext, TestPluginContext, TestSystemContext
 
 from cmem_plugin_pdf_extract.extraction_strategies.table_extraction_strategies import (
     LINES_STRATEGY,
@@ -33,6 +36,13 @@ PROJECT_ID = f"project_pdf_extract_plugin_test_{UUID4}"
 TYPE_URI = "urn:x-eccenca:PdfExtract"
 
 
+def project_file_entities(names: list[str]) -> Entities:
+    """Wrap project resource names as a FileEntitySchema Entities input."""
+    schema = FileEntitySchema()
+    entities = [schema.to_entity(ProjectFile(path=name, mime="application/pdf")) for name in names]
+    return Entities(entities=entities, schema=schema)
+
+
 def get_env_or_skip(key: str, message: str | None = None) -> str:
     """Get environment variable or skip test."""
     value = environ.get(key, "")
@@ -43,79 +53,97 @@ def get_env_or_skip(key: str, message: str | None = None) -> str:
     return value
 
 
+def get_test_client() -> Client:
+    """Get test client."""
+    test_execution_context = TestExecutionContext()
+    test_execution_context.system = TestSystemContext(
+        cmem_base_uri=str(os.getenv("CMEM_BASE_URI")),
+        di_api_endpoint=str(os.getenv("CMEM_BASE_URI")) + "/dataintegration",
+        dp_api_endpoint=str(os.getenv("CMEM_BASE_URI")) + "/dataplatform",
+    )
+    test_plugin_context = TestPluginContext()
+    test_plugin_context.system = TestSystemContext(
+        cmem_base_uri=str(os.getenv("CMEM_BASE_URI")),
+        di_api_endpoint=str(os.getenv("CMEM_BASE_URI")) + "/dataintegration",
+        dp_api_endpoint=str(os.getenv("CMEM_BASE_URI")) + "/dataplatform",
+    )
+    return Client.from_context(test_execution_context)
+
+
 @pytest.fixture
 def setup_valid() -> Generator:
     """Set up Validate test"""
+    client = get_test_client()
     with suppress(Exception):
-        delete_project(PROJECT_ID)
-    make_new_project(PROJECT_ID)
+        client.projects.delete_item(PROJECT_ID)
+    client.projects.create_item(Project(name=PROJECT_ID))
 
-    with (Path(__path__[0]) / "test_1.pdf").open("rb") as f:
-        create_resource(
-            project_name=PROJECT_ID,
-            resource_name=f"{UUID4}_1.pdf",
-            file_resource=f,
-            replace=True,
-        )
+    path = Path(__path__[0]) / "test_1.pdf"
+    key = f"{PROJECT_ID}:{UUID4}_1.pdf"
+    client.files.import_item(path=path, key=key, replace=True)
 
-    with (Path(__path__[0]) / "test_2.pdf").open("rb") as f:
-        create_resource(
-            project_name=PROJECT_ID,
-            resource_name=f"{UUID4}_2.pdf",
-            file_resource=f,
-            replace=True,
-        )
+    path = Path(__path__[0]) / "test_2.pdf"
+    key = f"{PROJECT_ID}:{UUID4}_2.pdf"
+    client.files.import_item(path=path, key=key, replace=True)
 
     yield
 
-    delete_project(PROJECT_ID)
+    client.projects.delete_item(PROJECT_ID)
 
 
 @pytest.fixture
 def setup_corrupted() -> Generator:
     """Set up Validate test"""
+    client = get_test_client()
     with suppress(Exception):
-        delete_project(PROJECT_ID)
-    make_new_project(PROJECT_ID)
+        client.projects.delete_item(PROJECT_ID)
+    client.projects.create_item(Project(name=PROJECT_ID))
 
-    create_resource(
-        project_name=PROJECT_ID,
-        resource_name=f"{UUID4}_corrupted_1.pdf",
-        file_resource=BytesIO(b""),
-        replace=True,
-    )
+    path = Path(__path__[0]) / "test_corrupted_1.pdf"
+    key = f"{PROJECT_ID}:{UUID4}_corrupted_1.pdf"
+    client.files.import_item(path=path, key=key, replace=True)
 
-    with (Path(__path__[0]) / "test_corrupted.pdf").open("rb") as f:
-        create_resource(
-            project_name=PROJECT_ID,
-            resource_name=f"{UUID4}_corrupted_2.pdf",
-            file_resource=f,
-            replace=True,
-        )
+    path = Path(__path__[0]) / "test_corrupted.pdf"
+    key = f"{PROJECT_ID}:{UUID4}_corrupted_2.pdf"
+    client.files.import_item(path=path, key=key, replace=True)
 
     yield
 
-    delete_project(PROJECT_ID)
+    client.projects.delete_item(PROJECT_ID)
 
 
 @pytest.fixture
 def setup_page_selection() -> Generator:
     """Set up Validate test"""
+    client = get_test_client()
     with suppress(Exception):
-        delete_project(PROJECT_ID)
-    make_new_project(PROJECT_ID)
+        client.projects.delete_item(PROJECT_ID)
+    client.projects.create_item(Project(name=PROJECT_ID))
 
-    with (Path(__path__[0]) / "test_3.pdf").open("rb") as f:
-        create_resource(
-            project_name=PROJECT_ID,
-            resource_name=f"{UUID4}_3.pdf",
-            file_resource=f,
-            replace=True,
-        )
+    path = Path(__path__[0]) / "test_3.pdf"
+    key = f"{PROJECT_ID}:{UUID4}_3.pdf"
+    client.files.import_item(path=path, key=key, replace=True)
 
     yield
 
-    delete_project(PROJECT_ID)
+    client.projects.delete_item(PROJECT_ID)
+
+
+@pytest.fixture
+def setup_umlauts() -> Generator:
+    """Set up Validate test"""
+    client = get_test_client()
+    with suppress(Exception):
+        client.projects.delete_item(PROJECT_ID)
+    client.projects.create_item(Project(name=PROJECT_ID))
+
+    path = Path(__path__[0]) / "test_with_umlauts_äöü.pdf"
+    key = f"{PROJECT_ID}:{UUID4}_with_umlauts_äöü.pdf"
+    client.files.import_item(path=path, key=key, replace=True)
+
+    yield
+
+    client.projects.delete_item(PROJECT_ID)
 
 
 @dataclass
@@ -124,16 +152,15 @@ class TestingEnvironment:
 
     __test__ = False
 
-    regex: str
     extract_plugin: PdfExtract
+
+    test_execution_context: TestExecutionContext
 
 
 def create_testing_env(generator: Generator) -> TestingEnvironment:
     """Help to create a TestingEnvironment"""
     _ = generator
-    regex = rf"{UUID4}_.*\.pdf"
     extract_plugin = PdfExtract(
-        regex=regex,
         all_files="no_combine",
         page_selection="",
         error_handling=RAISE_ON_ERROR,
@@ -147,9 +174,22 @@ def create_testing_env(generator: Generator) -> TestingEnvironment:
         ),
         max_processes=MAX_PROCESSES_DEFAULT,
     )
+    test_execution_context = TestExecutionContext(PROJECT_ID)
+    test_execution_context.system = TestSystemContext(
+        cmem_base_uri=str(os.getenv("CMEM_BASE_URI")),
+        di_api_endpoint=str(os.getenv("CMEM_BASE_URI")) + "/dataintegration",
+        dp_api_endpoint=str(os.getenv("CMEM_BASE_URI")) + "/dataplatform",
+    )
+    test_plugin_context = TestPluginContext()
+    test_plugin_context.system = TestSystemContext(
+        cmem_base_uri=str(os.getenv("CMEM_BASE_URI")),
+        di_api_endpoint=str(os.getenv("CMEM_BASE_URI")) + "/dataintegration",
+        dp_api_endpoint=str(os.getenv("CMEM_BASE_URI")) + "/dataplatform",
+    )
+
     return TestingEnvironment(
-        regex=regex,
         extract_plugin=extract_plugin,
+        test_execution_context=test_execution_context,
     )
 
 
@@ -169,3 +209,9 @@ def testing_env_corrupted(setup_corrupted: Generator) -> TestingEnvironment:
 def testing_env_page_selection(setup_page_selection: Generator) -> TestingEnvironment:
     """Provide testing environment"""
     return create_testing_env(setup_page_selection)
+
+
+@pytest.fixture
+def testing_env_umlauts(setup_umlauts: Generator) -> TestingEnvironment:
+    """Provide testing environment"""
+    return create_testing_env(setup_umlauts)

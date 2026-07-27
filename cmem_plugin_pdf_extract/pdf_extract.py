@@ -1,22 +1,21 @@
 """Extract text from PDF files"""
 
-import re
+import tempfile
 from collections import OrderedDict
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import BytesIO
 from os import cpu_count
+from pathlib import Path
 from typing import Any
 
 import yaml
-from cmem.cmempy.workspace.projects.resources import get_resources
-from cmem.cmempy.workspace.projects.resources.resource import get_resource
+from cmem_client.client import Client
 from cmem_plugin_base.dataintegration.context import (
     ExecutionContext,
     ExecutionReport,
-    PluginContext,
 )
-from cmem_plugin_base.dataintegration.description import Icon, Plugin, PluginAction, PluginParameter
+from cmem_plugin_base.dataintegration.description import Icon, Plugin, PluginParameter
 from cmem_plugin_base.dataintegration.entity import Entities, Entity, EntityPath, EntitySchema
 from cmem_plugin_base.dataintegration.parameter.choice import ChoiceParameterType
 from cmem_plugin_base.dataintegration.parameter.multiline import MultilineStringParameterType
@@ -27,7 +26,6 @@ from cmem_plugin_base.dataintegration.types import (
     IntParameterType,
     StringParameterType,
 )
-from cmem_plugin_base.dataintegration.utils import setup_cmempy_user_access
 from pdfplumber import open as pdfplumber_open
 from pdfplumber.page import Page
 from yaml import YAMLError, safe_load
@@ -46,6 +44,12 @@ from cmem_plugin_pdf_extract.utils import (
     parse_page_selection,
     validate_page_selection,
 )
+
+
+def _strategy_default(strategy: dict[Any, Any]) -> str:
+    """Format a strategy dict as YAML comment lines for use as a default parameter."""
+    return "\n".join(f"# {s}" for s in yaml.dump(strategy).strip().splitlines())
+
 
 MAX_PROCESSES_DEFAULT = cpu_count() - 1  # type: ignore[operator]
 TABLE_LINES = "lines"
@@ -101,24 +105,7 @@ TYPE_URI = "urn:x-eccenca:PdfExtract"
     description="Extract text and tables from PDF files",
     documentation=DOC,
     icon=Icon(package=__package__, file_name="pdf-extract.svg"),
-    actions=[
-        PluginAction(
-            name="test_regex",
-            label="Preview files",
-            description="Preview all of the PDF files that have been found.",
-        )
-    ],
     parameters=[
-        PluginParameter(
-            param_type=StringParameterType(),
-            name="regex",
-            label="File name regex filter",
-            description="Regular expression for filtering resources of the project. If this "
-            "parameter is set, the input port will be closed and project "
-            "files will be compared against the regular expression.",
-            advanced=True,
-            default_value="",
-        ),
         PluginParameter(
             param_type=ChoiceParameterType(COMBINE_PARAMETER_CHOICES),
             name="all_files",
@@ -197,18 +184,13 @@ class PdfExtract(WorkflowPlugin):
 
     def __init__(  # noqa: PLR0913
         self,
-        regex: str,
         all_files: str = NO_COMBINE,
         page_selection: str = "",
         error_handling: str = RAISE_ON_ERROR,
         table_strategy: str = TABLE_LINES,
         text_strategy: str = TEXT_DEFAULT,
-        custom_table_strategy: str = "\n".join(
-            f"# {_}" for _ in yaml.dump(LINES_STRATEGY).strip().splitlines()
-        ),
-        custom_text_strategy: str = "\n".join(
-            f"# {_}" for _ in yaml.dump(DEFAULT_TEXT_EXTRACTION).strip().splitlines()
-        ),
+        custom_table_strategy: str = _strategy_default(LINES_STRATEGY),
+        custom_text_strategy: str = _strategy_default(DEFAULT_TEXT_EXTRACTION),
         max_processes: int = MAX_PROCESSES_DEFAULT,
     ) -> None:
         if page_selection:
@@ -224,15 +206,10 @@ class PdfExtract(WorkflowPlugin):
             raise ValueError(f"Invalid error handling mode: {error_handling}")
         self.error_handling = error_handling
 
-        self.regex = rf"{regex}"
         self.all_files = all_files
         self.max_processes = max_processes
         self.schema = EntitySchema(type_uri=TYPE_URI, paths=[EntityPath("pdf_extract_output")])
-        self.input_ports = (
-            FixedNumberOfInputs([FixedSchemaPort(schema=FileEntitySchema())])
-            if not self.regex
-            else FixedNumberOfInputs([])
-        )
+        self.input_ports = FixedNumberOfInputs([FixedSchemaPort(schema=FileEntitySchema())])
         self.output_port = FixedSchemaPort(self.schema)
 
     def set_text_strategy(self, custom_text_strategy: str, text_strategy: str) -> None:
@@ -277,22 +254,35 @@ class PdfExtract(WorkflowPlugin):
         else:
             self.table_strategy = TABLE_EXTRACTION_STRATEGIES[table_strategy]
 
-    def test_regex(self, context: PluginContext) -> str:
-        """Plugin Action to test the regex pattern against existing files"""
-        output = ["No regular expression was given!"]
-        if self.regex != "":
-            setup_cmempy_user_access(context.user)
-            files_found = self.get_file_list(context.project_id)
-            output = [
-                f"{len(files_found)} file{'' if len(files_found) == 1 else 's'} found matching "
-                f"the regular expression in the project files."
-            ]
-            output.extend(f"- {file}" for file in files_found)
-        output.append(
-            "\nThe preview does not show results from input ports as they are usually "
-            "not available before the execution"
-        )
-        return "\n".join(output)
+    @staticmethod
+    def _get_file_content(project_id: str, filename: str, context: ExecutionContext) -> BytesIO:
+        """Get file content on-demand using FilesRepository."""
+        # Get client from context
+        client = Client.from_context(context)
+        client.files.fetch_data()
+
+        key = f"{project_id}:{filename}"
+
+        # Create temporary file and export
+        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+            temp_path = Path(tmp_file.name)
+
+        try:
+            exported_path = client.files.export_item(key=key, path=temp_path, replace=True)
+
+            # Read into BytesIO
+            with exported_path.open("rb") as f:
+                content = f.read()
+
+            # Clean up temporary file
+            Path(exported_path).unlink(missing_ok=True)
+            return BytesIO(content)
+
+        except Exception:
+            # Clean up temporary file if something went wrong
+            if Path(temp_path).exists():
+                Path(temp_path).unlink(missing_ok=True)
+            raise
 
     @staticmethod
     def extract_pdf_data_worker(  # noqa: PLR0913
@@ -303,14 +293,18 @@ class PdfExtract(WorkflowPlugin):
         text_settings: dict,
         error_handling: str,
         file_origin: str,
+        context: ExecutionContext,
     ) -> dict:
         """Extract structured PDF data (sequential processing)."""
         output: dict = {"metadata": {"Filename": filename}, "pages": []}
         binary_file: str | BytesIO
+
         if file_origin == "Local":
             binary_file = filename
         else:
-            binary_file = BytesIO(get_resource(project_id, filename))
+            # Get file content on-demand
+            binary_file = PdfExtract._get_file_content(project_id, filename, context)
+
         page_number = None
         try:
             with pdfplumber_open(binary_file) as pdf:
@@ -415,6 +409,7 @@ class PdfExtract(WorkflowPlugin):
                     self.text_strategy,
                     self.error_handling,
                     file_origin,
+                    self.context,  # Pass context to worker
                 ): filename
                 for filename, file_origin in zip(filenames, file_origins, strict=True)
             }
@@ -460,28 +455,15 @@ class PdfExtract(WorkflowPlugin):
 
         return Entities(entities=entities, schema=self.schema)
 
-    def get_file_list(self, project_id: str) -> list:
-        """Get file list using regex pattern"""
-        return [r["name"] for r in get_resources(project_id) if re.fullmatch(self.regex, r["name"])]
-
     def execute(self, inputs: Sequence[Entities], context: ExecutionContext) -> Entities:
         """Run the workflow operator."""
         context.report.update(ExecutionReport(entity_count=0, operation_desc="files processed"))
         self.context = context
 
-        if len(inputs) != 0:
-            setup_cmempy_user_access(context.user)
-            filenames = []
-            filetypes = []
-            for entity in inputs[0].entities:
-                file = FileEntitySchema().from_entity(entity=entity)
-                filenames.append(file.path)
-                filetypes.append(file.file_type)
-            return self.get_entities(filenames, filetypes)
-
-        setup_cmempy_user_access(context.user)
-        filenames = self.get_file_list(context.task.project_id())
-        filetype = ["Project" for _ in self.get_file_list(context.task.project_id())]
-        if not filenames:
-            raise FileNotFoundError("No matching files found")
-        return self.get_entities(filenames, filetype)
+        filenames = []
+        filetypes = []
+        for entity in inputs[0].entities:
+            file = FileEntitySchema().from_entity(entity=entity)
+            filenames.append(file.path)
+            filetypes.append(file.file_type)
+        return self.get_entities(filenames, filetypes)
