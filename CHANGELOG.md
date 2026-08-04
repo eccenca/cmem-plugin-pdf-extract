@@ -4,17 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/)
 
-## [1.2.0] 2026-08-04
+## [2.1.0] 2026-08-04
 
 ### Changed
 
-- Replace cmempy with cmem-client
 - Use TestingEnvironment from `cmem-plugin-base`
 - Update template
 
 ### Fixed
 
 - Use `ImportConflictPolicy` when importing items via `cmem-client`
+
+## [2.0.0] 2026-07-27
+
+### Changed
+
+- Replace cmempy with cmem-client
 
 ### Removed
 
