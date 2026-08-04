@@ -11,6 +11,7 @@ import pytest
 import yaml
 from cmem_client.client import Client
 from cmem_client.models.project import Project
+from cmem_client.repositories.protocols.import_item import ImportConflictPolicy
 from cmem_plugin_base.dataintegration.entity import Entities
 from cmem_plugin_base.dataintegration.typed_entities.file import FileEntitySchema, ProjectFile
 from cmem_plugin_base.testing import TestExecutionContext, TestPluginContext, TestSystemContext
@@ -80,11 +81,11 @@ def setup_valid() -> Generator:
 
     path = Path(__path__[0]) / "test_1.pdf"
     key = f"{PROJECT_ID}:{UUID4}_1.pdf"
-    client.files.import_item(path=path, key=key, replace=True)
+    client.files.import_item(path=path, key=key, on_conflict=ImportConflictPolicy.REPLACE)
 
     path = Path(__path__[0]) / "test_2.pdf"
     key = f"{PROJECT_ID}:{UUID4}_2.pdf"
-    client.files.import_item(path=path, key=key, replace=True)
+    client.files.import_item(path=path, key=key, on_conflict=ImportConflictPolicy.REPLACE)
 
     yield
 
@@ -101,11 +102,11 @@ def setup_corrupted() -> Generator:
 
     path = Path(__path__[0]) / "test_corrupted_1.pdf"
     key = f"{PROJECT_ID}:{UUID4}_corrupted_1.pdf"
-    client.files.import_item(path=path, key=key, replace=True)
+    client.files.import_item(path=path, key=key, on_conflict=ImportConflictPolicy.REPLACE)
 
     path = Path(__path__[0]) / "test_corrupted.pdf"
     key = f"{PROJECT_ID}:{UUID4}_corrupted_2.pdf"
-    client.files.import_item(path=path, key=key, replace=True)
+    client.files.import_item(path=path, key=key, on_conflict=ImportConflictPolicy.REPLACE)
 
     yield
 
@@ -122,7 +123,7 @@ def setup_page_selection() -> Generator:
 
     path = Path(__path__[0]) / "test_3.pdf"
     key = f"{PROJECT_ID}:{UUID4}_3.pdf"
-    client.files.import_item(path=path, key=key, replace=True)
+    client.files.import_item(path=path, key=key, on_conflict=ImportConflictPolicy.REPLACE)
 
     yield
 
@@ -139,7 +140,7 @@ def setup_umlauts() -> Generator:
 
     path = Path(__path__[0]) / "test_with_umlauts_äöü.pdf"
     key = f"{PROJECT_ID}:{UUID4}_with_umlauts_äöü.pdf"
-    client.files.import_item(path=path, key=key, replace=True)
+    client.files.import_item(path=path, key=key, on_conflict=ImportConflictPolicy.REPLACE)
 
     yield
 
@@ -175,17 +176,6 @@ def create_testing_env(generator: Generator) -> TestingEnvironment:
         max_processes=MAX_PROCESSES_DEFAULT,
     )
     test_execution_context = TestExecutionContext(PROJECT_ID)
-    test_execution_context.system = TestSystemContext(
-        cmem_base_uri=str(os.getenv("CMEM_BASE_URI")),
-        di_api_endpoint=str(os.getenv("CMEM_BASE_URI")) + "/dataintegration",
-        dp_api_endpoint=str(os.getenv("CMEM_BASE_URI")) + "/dataplatform",
-    )
-    test_plugin_context = TestPluginContext()
-    test_plugin_context.system = TestSystemContext(
-        cmem_base_uri=str(os.getenv("CMEM_BASE_URI")),
-        di_api_endpoint=str(os.getenv("CMEM_BASE_URI")) + "/dataintegration",
-        dp_api_endpoint=str(os.getenv("CMEM_BASE_URI")) + "/dataplatform",
-    )
 
     return TestingEnvironment(
         extract_plugin=extract_plugin,
