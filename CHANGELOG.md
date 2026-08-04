@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### Changed
 
 - Replace cmempy with cmem-client
+- Use TestingEnvironment from `cmem-plugin-base`
+- Update template
+
+### Fixed
+
+- Use `ImportConflictPolicy` when importing items via `cmem-client`
 
 ### Removed
 
