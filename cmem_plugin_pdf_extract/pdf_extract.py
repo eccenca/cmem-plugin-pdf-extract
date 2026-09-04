@@ -182,7 +182,7 @@ TYPE_URI = "urn:x-eccenca:PdfExtract"
 class PdfExtract(WorkflowPlugin):
     """PDF Extract plugin."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # noqa: PLR0913 PLR0917
         self,
         all_files: str = NO_COMBINE,
         page_selection: str = "",
@@ -285,7 +285,7 @@ class PdfExtract(WorkflowPlugin):
             raise
 
     @staticmethod
-    def extract_pdf_data_worker(  # noqa: PLR0913
+    def extract_pdf_data_worker(  # noqa: PLR0913 PLR0917
         filename: str,
         page_numbers: list,
         project_id: str,
