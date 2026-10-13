@@ -64,7 +64,7 @@ def test_one_entity_per_file(testing_env_valid: TestingEnvironment) -> None:
     entities = plugin.execute(inputs=[inputs], context=test_execution_context)
 
     assert entities.schema.paths == [EntityPath("pdf_extract_output")]
-    assert len(entities.entities) == 2  # noqa: PLR2004
+    assert len(entities.entities) == 2
 
     # Collect all entity data
     entity_data = [
